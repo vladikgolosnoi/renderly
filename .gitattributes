@@ -1,0 +1,4 @@
+* text=auto
+
+# keep shell scripts executable inside containers
+*.sh text eol=lf

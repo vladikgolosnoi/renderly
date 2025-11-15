@@ -69,6 +69,7 @@ docker compose exec api python -m app.seeds.seed_data
 - Если `docker compose exec api ...` возвращает `service "api" is not running`, дайте контейнеру подняться и повторите команду.
 - Если во время `docker compose up` появилось `container <project>-db-1 ... exited with code 1`, выполните `docker compose down -v` и повторите запуск — так база пересоберётся и миграции пройдут начисто.
 - Если `renderly-redis-1` не стартует с ошибкой `port is already allocated`, на машине уже запущен Redis на 6379 — остановите его либо поменяйте порт в `.env` (`REDIS_PORT` + `REDIS_URL`).
+- Если `api` падает на старте с `exec ./entrypoint.sh: no such file or directory`, обновите репозиторий, убедитесь, что `.gitattributes` подтянулся, и переустановите окончание строк: `git checkout -- apps/api/entrypoint.sh` (на Windows также проверьте `git config core.autocrlf false` перед клоном).
 - API: http://localhost:8000/api/docs  
 - Web‑клиент: http://localhost:5173  
 - Health‑check: `GET http://localhost:8000/api/healthz`
