@@ -15,7 +15,7 @@ import sqlalchemy as sa
 revision: str = "20251112_02"
 down_revision: Union[str, None] = "20251112_01"
 branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = "20251108_08"
 
 
 def upgrade() -> None:

@@ -56,11 +56,15 @@ Makefile           # быстрые команды lint/test/compose
 ```bash
 cp .env.example .env
 cd infra
+# (опционально) если разворачивали проект ранее и хотите чистый старт
+# docker compose down -v
 docker compose up -d --build
+# дождитесь статуса Up у сервиса api (docker compose ps)
 docker compose exec api alembic upgrade head
 docker compose exec api python -m app.seeds.seed_data
 ```
 
+- Если `docker compose exec api ...` возвращает `service "api" is not running`, дайте контейнеру подняться и повторите команду.
 - API: http://localhost:8000/api/docs  
 - Web‑клиент: http://localhost:5173  
 - Health‑check: `GET http://localhost:8000/api/healthz`
