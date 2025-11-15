@@ -33,6 +33,8 @@ export interface BlockDefinition {
   schema: BlockField[];
   default_config: Record<string, unknown>;
   ui_meta?: BlockDefinitionMeta | null;
+  template_markup?: string | null;
+  template_styles?: string | null;
 }
 
 export interface BlockTranslations {

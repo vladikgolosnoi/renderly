@@ -898,8 +898,10 @@ async function revokeShare(shareId: number) {
 }
 
 .danger-card {
-  border: 1px solid #fecaca;
-  background: #fff5f5;
+  border: 1px solid var(--danger-border);
+  background: var(--danger-bg);
+  box-shadow: var(--panel-shadow);
+  border-radius: 24px;
 }
 
 .danger-input {
@@ -909,9 +911,11 @@ async function revokeShare(shareId: number) {
 }
 
 .danger-input input {
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-border);
   border-radius: 12px;
   padding: 10px 14px;
+  background: var(--panel-surface);
+  color: var(--text-primary);
 }
 
 .danger-card .danger {
@@ -1084,10 +1088,10 @@ table td {
 }
 
 .danger {
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-border);
   border-radius: 12px;
-  background: #fee2e2;
-  color: #b91c1c;
+  background: var(--danger-bg);
+  color: var(--danger-text);
   padding: 10px 18px;
 }
 

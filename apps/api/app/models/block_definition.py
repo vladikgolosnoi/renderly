@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, JSON, String
+from sqlalchemy import Column, DateTime, Integer, JSON, String, Text
 from sqlalchemy.orm import relationship
 
 from app.db.base_class import Base
@@ -18,6 +18,8 @@ class BlockDefinition(Base):
     schema = Column(JSON, default=list)
     default_config = Column(JSON, default=dict)
     ui_meta = Column(JSON, default=dict, nullable=True)
+    template_markup = Column(Text, nullable=True)
+    template_styles = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

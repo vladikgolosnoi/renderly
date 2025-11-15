@@ -871,13 +871,14 @@ watch(
 
 <style scoped>
 .preview {
-  background: #fff;
+  background: var(--panel-surface);
   border-radius: 18px;
   padding: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: var(--panel-shadow);
 }
 
 .preview > header {
@@ -889,7 +890,7 @@ watch(
 
 .heading span {
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .controls {
@@ -900,14 +901,16 @@ watch(
 
 .viewports {
   display: inline-flex;
-  background: #f1f5f9;
+  background: var(--panel-soft);
   border-radius: 999px;
   padding: 4px;
+  border: 1px solid var(--divider-color);
 }
 
 .viewports button {
   border: none;
   background: transparent;
+  color: var(--text-secondary);
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 0.85rem;
@@ -915,7 +918,7 @@ watch(
 }
 
 .viewports button.active {
-  background: #2563eb;
+  background: linear-gradient(125deg, var(--accent), var(--accent-strong));
   color: #fff;
 }
 
@@ -924,7 +927,7 @@ watch(
   width: 100%;
   padding: 60px 28px 96px;
   border-radius: 42px;
-  border: 1px solid #d6e6ff;
+  border: 1px solid var(--divider-color);
   background: radial-gradient(circle at 20% 20%, rgba(147, 197, 253, 0.35), transparent 55%),
     radial-gradient(circle at 80% 0%, rgba(199, 210, 254, 0.5), transparent 60%),
     linear-gradient(145deg, #f9fbff 0%, #eef4ff 55%, #fefefe 100%);
@@ -1005,7 +1008,7 @@ watch(
   min-height: 320px;
   border-radius: 26px;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg-surface);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
   position: relative;
 }
@@ -1208,7 +1211,7 @@ iframe {
   height: 100%;
   border: none;
   display: block;
-  background: #fff;
+  background: transparent;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -1219,7 +1222,7 @@ iframe::-webkit-scrollbar {
 }
 
 .history {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--divider-color);
   padding-top: 8px;
 }
 
@@ -1238,18 +1241,19 @@ iframe::-webkit-scrollbar {
 }
 
 .history button {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--divider-color);
   background: transparent;
   border-radius: 10px;
   padding: 6px 10px;
   cursor: pointer;
   font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 .ghost {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--divider-color);
   background: transparent;
-  color: #2563eb;
+  color: var(--text-primary);
   border-radius: 999px;
   padding: 6px 14px;
   cursor: pointer;
@@ -1258,5 +1262,30 @@ iframe::-webkit-scrollbar {
 .ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+:global(.theme-dark) .device-preview {
+  background: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.25), transparent 55%),
+    radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.25), transparent 60%),
+    linear-gradient(155deg, #0f172a 0%, #0b1424 55%, #060b13 100%);
+  border-color: var(--divider-color);
+  box-shadow: 0 45px 80px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+:global(.theme-dark) .device-shell {
+  background: linear-gradient(145deg, #1c2740, #121a2f 55%, #0c1323);
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow: 0 55px 90px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+:global(.theme-dark) .device-frame {
+  background: linear-gradient(145deg, #0c1323, #111a2f 55%, #1b2340);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 -12px 20px rgba(0, 0, 0, 0.45),
+    0 18px 38px rgba(0, 0, 0, 0.55);
+}
+
+:global(.theme-dark) .device-screen-inner {
+  background: #0b1220;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.65);
 }
 </style>

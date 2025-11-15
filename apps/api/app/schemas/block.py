@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, ConfigDict, validator
 class BlockFieldSchema(BaseModel):
     key: str
     label: str
-    type: Literal["text", "richtext", "media", "list", "button", "stats"]
+    type: Literal["text", "richtext", "textarea", "media", "list", "button", "stats"]
     required: bool = False
     description: str | None = None
     default: Any | None = None
@@ -24,6 +24,8 @@ class BlockDefinitionSchema(BaseModel):
     schema: list[BlockFieldSchema] = Field(default_factory=list)
     default_config: dict[str, Any] = Field(default_factory=dict)
     ui_meta: dict[str, Any] = Field(default_factory=dict)
+    template_markup: str | None = None
+    template_styles: str | None = None
 
     model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
@@ -37,6 +39,8 @@ class BlockDefinitionCreate(BaseModel):
     schema: list[BlockFieldSchema] = Field(default_factory=list)
     default_config: dict[str, Any] = Field(default_factory=dict)
     ui_meta: dict[str, Any] = Field(default_factory=dict)
+    template_markup: str | None = None
+    template_styles: str | None = None
 
 
 class BlockDefinitionUpdate(BaseModel):
@@ -47,6 +51,8 @@ class BlockDefinitionUpdate(BaseModel):
     schema: list[BlockFieldSchema] | None = None
     default_config: dict[str, Any] | None = None
     ui_meta: dict[str, Any] | None = None
+    template_markup: str | None = None
+    template_styles: str | None = None
 
 
 class BlockInstanceBase(BaseModel):

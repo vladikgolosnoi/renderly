@@ -1,14 +1,18 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 
 
 from datetime import datetime
+from dataclasses import dataclass
+import hashlib
+import logging
 
 from typing import Any
 
 
 
-from jinja2 import Template
+from jinja2 import Environment, Template, TemplateError
+from markupsafe import Markup, escape
 
 
 
@@ -141,6 +145,293 @@ BASE_TEMPLATE = Template(
 
 
 
+logger = logging.getLogger(__name__)
+
+
+CUSTOM_TEMPLATE_ENV = Environment(autoescape=False, trim_blocks=True, lstrip_blocks=True)
+_CUSTOM_TEMPLATE_CACHE: dict[str, tuple[str, Template]] = {}
+
+
+@dataclass
+class RenderedBlock:
+    html: str
+    style_key: str | None = None
+    style_rules: str | None = None
+
+
+@dataclass
+class TemplateListItem:
+    base_key: str
+    index: int
+    value: Any
+
+    def path(self, sub_key: str | None = None) -> str:
+        if sub_key is None:
+            return f"{self.base_key}.{self.index}"
+        return f"{self.base_key}.{self.index}.{sub_key}"
+
+
+class TemplateHelpers:
+    def __init__(self, block: BlockInstance, payload: dict[str, Any]):
+        self.block = block
+        self.payload = payload
+        self.block_id = block.id or block.order_index or 0
+        self.definition_key = block.definition.key
+
+    def text(
+        self,
+        key: str,
+        tag: str = "p",
+        classes: str = "",
+        default: str = "",
+        attrs: dict[str, str] | None = None,
+    ) -> Markup:
+        return self._field(key, tag, classes, default, attrs, allow_html=False)
+
+    def richtext(
+        self,
+        key: str,
+        tag: str = "div",
+        classes: str = "",
+        default: str = "",
+        attrs: dict[str, str] | None = None,
+    ) -> Markup:
+        return self._field(key, tag, classes, default, attrs, allow_html=True)
+
+    def field(
+        self,
+        path: str,
+        tag: str = "span",
+        classes: str = "",
+        default: str = "",
+        attrs: dict[str, str] | None = None,
+        allow_html: bool = False,
+    ) -> Markup:
+        return self._field(path, tag, classes, default, attrs, allow_html)
+
+    def value(self, path: str, default: str = "") -> str:
+        data = self._raw_value(path)
+        if data is None:
+            return default
+        if isinstance(data, (int, float)):
+            return str(data)
+        if isinstance(data, str):
+            return data
+        return default
+
+    def list_items(self, key: str) -> list[TemplateListItem]:
+        raw = self._raw_value(key)
+        if not isinstance(raw, list):
+            return []
+        return [TemplateListItem(key, index, item) for index, item in enumerate(raw)]
+
+    def items(self, key: str) -> list[TemplateListItem]:
+        return self.list_items(key)
+
+    def item_text(
+        self,
+        item: TemplateListItem,
+        sub_key: str | None = None,
+        tag: str = "span",
+        classes: str = "",
+        default: str = "",
+        attrs: dict[str, str] | None = None,
+    ) -> Markup:
+        return self._field(item.path(sub_key), tag, classes, default, attrs, allow_html=False)
+
+    def item_richtext(
+        self,
+        item: TemplateListItem,
+        sub_key: str | None = None,
+        tag: str = "div",
+        classes: str = "",
+        default: str = "",
+        attrs: dict[str, str] | None = None,
+    ) -> Markup:
+        return self._field(item.path(sub_key), tag, classes, default, attrs, allow_html=True)
+
+    def item_value(self, item: TemplateListItem, sub_key: str | None = None, default: str = "") -> str:
+        return self.value(item.path(sub_key), default)
+
+    def asset(
+        self,
+        key: str,
+        classes: str = "",
+        label: str | None = None,
+        attrs: dict[str, str] | None = None,
+    ) -> Markup:
+        label = label or self._humanize(key)
+        url = self.value(key, "")
+        media_html: str
+        if url and is_video_url(url):
+            media_html = f'<video src="{escape(url)}" autoplay muted loop playsinline></video>'
+        elif url:
+            media_html = f'<img src="{escape(url)}" alt="{escape(label)}"/>'
+        else:
+            media_html = self._asset_placeholder(label)
+        attr_map = dict(attrs or {})
+        attr_map["data-field-kind"] = "asset"
+        attr_map["data-field-label"] = label
+        return Markup(
+            f'<figure data-block-id="{self.block_id}" data-field-path="{key}"'
+            f'{self._build_attr_string(classes, attr_map)}>{media_html}</figure>'
+        )
+
+    def item_asset(
+        self,
+        item: TemplateListItem,
+        sub_key: str | None = None,
+        classes: str = "",
+        label: str | None = None,
+        attrs: dict[str, str] | None = None,
+    ) -> Markup:
+        path = item.path(sub_key)
+        label = label or self._humanize(sub_key or item.base_key)
+        url = self.value(path, "")
+        media_html: str
+        if url and is_video_url(url):
+            media_html = f'<video src="{escape(url)}" autoplay muted loop playsinline></video>'
+        elif url:
+            media_html = f'<img src="{escape(url)}" alt="{escape(label)}"/>'
+        else:
+            media_html = self._asset_placeholder(label)
+        attr_map = dict(attrs or {})
+        attr_map["data-field-kind"] = "asset"
+        attr_map["data-field-label"] = label
+        return Markup(
+            f'<figure data-block-id="{self.block_id}" data-field-path="{path}"'
+            f'{self._build_attr_string(classes, attr_map)}>{media_html}</figure>'
+        )
+
+    def field_path(self, path: str) -> str:
+        return path
+
+    def section_classes(self, *extra: str) -> str:
+        classes = ["block", f"block-{self.definition_key}"]
+        classes.extend(cls for cls in extra if cls)
+        return " ".join(classes)
+
+    def _field(
+        self,
+        path: str,
+        tag: str,
+        classes: str,
+        default: str,
+        attrs: dict[str, str] | None,
+        allow_html: bool,
+    ) -> Markup:
+        value = self.value(path, default)
+        content = value if allow_html else escape(value)
+        attr_string = self._build_attr_string(classes, attrs)
+        return Markup(
+            f'<{tag} data-block-id="{self.block_id}" data-field-path="{path}"{attr_string}>{content}</{tag}>'
+        )
+
+    def _build_attr_string(self, classes: str, attrs: dict[str, str] | None) -> str:
+        pairs: list[tuple[str, str]] = []
+        if classes:
+            pairs.append(("class", classes))
+        if attrs:
+            for key, value in attrs.items():
+                if value is None:
+                    continue
+                pairs.append((key, str(value)))
+        if not pairs:
+            return ""
+        return " " + " ".join(f'{key}="{escape(val)}"' for key, val in pairs)
+
+    def _raw_value(self, path: str) -> Any:
+        if not isinstance(self.payload, dict) or not path:
+            return None
+        normalized = []
+        for segment in path.replace("]", "").split("."):
+            normalized.extend(part for part in segment.split("[") if part)
+        current: Any = self.payload
+        for part in normalized:
+            if isinstance(current, list):
+                try:
+                    index = int(part)
+                except ValueError:
+                    return None
+                if index < 0 or index >= len(current):
+                    return None
+                current = current[index]
+                continue
+            if isinstance(current, dict):
+                current = current.get(part)
+                continue
+            return None
+        return current
+
+    def _humanize(self, key: str) -> str:
+        return key.replace("_", " ").title()
+
+    def _asset_placeholder(self, label: str) -> str:
+        return (
+            '<div class="asset-placeholder">'
+            f"<strong>{escape(label)}</strong>"
+            "<span>Загрузите медиа</span>"
+            "</div>"
+        )
+
+
+def _get_compiled_template(cache_key: str, markup: str) -> Template:
+    checksum = hashlib.sha1(markup.encode("utf-8")).hexdigest()
+    cached = _CUSTOM_TEMPLATE_CACHE.get(cache_key)
+    if cached and cached[0] == checksum:
+        return cached[1]
+    template = CUSTOM_TEMPLATE_ENV.from_string(markup)
+    _CUSTOM_TEMPLATE_CACHE[cache_key] = (checksum, template)
+    return template
+
+
+def _render_template_error(helpers: TemplateHelpers, message: str) -> str:
+    attrs = [
+        f'class="{helpers.section_classes("is-error")}"',
+        f'data-block-section="{helpers.block_id}"',
+        f'data-template-key="{helpers.definition_key}"',
+    ]
+    return f"<section {' '.join(attrs)}><pre>{escape(message)}</pre></section>"
+
+
+def _render_dynamic_block(block: BlockInstance, payload: dict[str, Any], style_attr: str) -> RenderedBlock | None:
+    markup = block.definition.template_markup
+    if not markup:
+        return None
+    cache_key = str(block.definition.id or block.definition.key)
+    try:
+        template = _get_compiled_template(cache_key, markup)
+    except TemplateError as exc:
+        logger.warning("Failed to compile template for block %s: %s", block.definition.key, exc)
+        helpers = TemplateHelpers(block, payload)
+        return RenderedBlock(html=_render_template_error(helpers, f"Template error: {exc}"))
+    helpers = TemplateHelpers(block, payload)
+    context = {
+        "block": block,
+        "payload": payload,
+        "helpers": helpers,
+        "block_id": helpers.block_id,
+        "style_attr": style_attr,
+        "is_video_url": is_video_url,
+    }
+    try:
+        inner = template.render(**context)
+    except TemplateError as exc:
+        logger.warning("Failed to render template for block %s: %s", block.definition.key, exc)
+        return RenderedBlock(html=_render_template_error(helpers, f"Template error: {exc}"))
+    section_attrs = [
+        f'class="{helpers.section_classes()}"',
+        f'data-block-section="{helpers.block_id}"',
+        f'data-template-key="{block.definition.key}"',
+    ]
+    if style_attr:
+        section_attrs.append(f'style="{style_attr}"')
+    html = f"<section {' '.join(section_attrs)}>{inner}</section>"
+    style_rules = (block.definition.template_styles or "").strip() or None
+    style_key = block.definition.key if style_rules else None
+    return RenderedBlock(html=html, style_key=style_key, style_rules=style_rules)
+
+
 
 def _style_to_attr(style: dict[str, Any] | None) -> str:
 
@@ -261,6 +552,81 @@ BLOCK_TEMPLATES: dict[str, Template] = {
 
         """
 
+    ),
+    "speaker-highlight": Template(
+        """
+        {% set block_id = block.id or block.order_index %}
+        {% set layout_mode = (layout or "left").lower() %}
+        {% set gradient = gradient_start and gradient_end %}
+        {% set background = gradient and "linear-gradient(135deg, " ~ gradient_start ~ ", " ~ gradient_end ~ ")" or bg_color or "#111827" %}
+        {% set text_col = text_color or "#f8fafc" %}
+        {% set badge_col = badge_color or "#f9769b" %}
+        {% set shadow = card_shadow or "0 30px 70px rgba(15, 23, 42, 0.4)" %}
+        {% set chips_list = chips.split(",") if chips else [] %}
+        {% set stats_list = stats or [] %}
+        {% set tags_list = tags or [] %}
+        <section class="speaker-highlight" data-block-section="{{ block_id }}" style="background: {{ background }}; color: {{ text_col }}; box-shadow: {{ shadow }}; border-radius: 32px; padding: 40px 32px;">
+          <div style="display:flex; flex-wrap:wrap; gap:32px; align-items:center;">
+            <div style="flex:1; min-width:260px; display:flex; flex-direction:column; gap:12px;">
+              {% if badge_label %}
+              <span style="display:inline-flex; align-items:center; padding:4px 12px; border-radius:999px; font-weight:600; letter-spacing:0.08em; background: {{ badge_col }};"
+                    data-block-id="{{ block_id }}" data-field-path="badge_label">{{ badge_label }}</span>
+              {% endif %}
+              {% if eyebrow %}<p style="margin:0; text-transform:uppercase; letter-spacing:0.2em; font-size:0.8rem;"
+                    data-block-id="{{ block_id }}" data-field-path="eyebrow">{{ eyebrow }}</p>{% endif %}
+              {% if headline %}<h2 style="margin:0; font-size:2.2rem;"
+                    data-block-id="{{ block_id }}" data-field-path="headline">{{ headline }}</h2>{% endif %}
+              {% if subtitle %}<h3 style="margin:0; font-size:1.1rem; font-weight:500; opacity:0.85;"
+                    data-block-id="{{ block_id }}" data-field-path="subtitle">{{ subtitle }}</h3>{% endif %}
+              {% if description %}<div style="opacity:0.9; line-height:1.5;"
+                    data-block-id="{{ block_id }}" data-field-path="description">{{ description | safe }}</div>{% endif %}
+              {% if chips_list %}
+              <div style="display:flex; flex-wrap:wrap; gap:8px;" data-block-id="{{ block_id }}" data-field-path="chips">
+                {% for chip in chips_list %}
+                <span style="padding:4px 10px; border-radius:999px; font-size:0.85rem; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.3);">{{ chip.strip() }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% if tags_list %}
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                {% for tag in tags_list %}
+                <span style="display:flex; gap:8px; align-items:center;">
+                  <strong data-block-id="{{ block_id }}" data-field-path="tags.{{ loop.index0 }}.icon">{{ tag.icon }}</strong>
+                  <span data-block-id="{{ block_id }}" data-field-path="tags.{{ loop.index0 }}.title">{{ tag.title }}</span>
+                </span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:6px;">
+                {% if cta_primary_label %}
+                <a href="{{ cta_primary_url or '#' }}" style="text-decoration:none; font-weight:600; padding:10px 22px; border-radius:999px; background:#fff; color:#111827; box-shadow:0 10px 20px rgba(0,0,0,0.25);"
+                   data-block-id="{{ block_id }}" data-field-path="cta_primary_label">{{ cta_primary_label }}</a>
+                {% endif %}
+                {% if cta_secondary_label %}
+                <a href="{{ cta_secondary_url or '#' }}" style="text-decoration:none; font-weight:600; padding:10px 22px; border-radius:999px; border:1px solid rgba(255,255,255,0.7); color:#fff;"
+                   data-block-id="{{ block_id }}" data-field-path="cta_secondary_label">{{ cta_secondary_label }}</a>
+                {% endif %}
+              </div>
+              {% if stats_list %}
+              <div style="display:flex; flex-wrap:wrap; gap:16px; margin-top:12px;">
+                {% for stat in stats_list %}
+                <article style="min-width:120px; padding:10px 14px; border-radius:18px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); text-align:center;">
+                  <strong style="display:block; font-size:1.4rem;"
+                          data-block-id="{{ block_id }}" data-field-path="stats.{{ loop.index0 }}.value">{{ stat.value }}</strong>
+                  <small style="opacity:0.75;"
+                         data-block-id="{{ block_id }}" data-field-path="stats.{{ loop.index0 }}.label">{{ stat.label }}</small>
+                </article>
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <figure style="margin:0; width:260px; flex-shrink:0; text-align:center; {% if layout_mode == 'right' %}order:-1;{% endif %}">
+              <img src="{{ avatar or 'https://placehold.co/300x360/222/eee?text=avatar' }}" alt="{{ headline or 'speaker' }}" style="width:100%; height:320px; object-fit:cover; border-radius:{% if avatar_shape and avatar_shape|lower == 'square' %}32px{% else %}999px{% endif %}; box-shadow:0 20px 45px rgba(0,0,0,0.35);"
+                   data-block-id="{{ block_id }}" data-field-path="avatar" />
+            </figure>
+          </div>
+        </section>
+        """
     ),
 
     "feature-grid": Template(
@@ -442,25 +808,16 @@ BLOCK_TEMPLATES: dict[str, Template] = {
           <div class="plans">
 
             {% for plan in plans %}
-
+              {% set plan_index = loop.index0 %}
               <article class="plan">
-
-                <h3 data-block-id="{{ block_id }}" data-field-path="plans.{{ loop.index0 }}.name">{{ plan.name or "" }}</h3>
-
-                <strong data-block-id="{{ block_id }}" data-field-path="plans.{{ loop.index0 }}.price">{{ plan.price or "" }}</strong>
-
+                <h3 data-block-id="{{ block_id }}" data-field-path="plans.{{ plan_index }}.name">{{ plan.name or "" }}</h3>
+                <strong data-block-id="{{ block_id }}" data-field-path="plans.{{ plan_index }}.price">{{ plan.price or "" }}</strong>
                 <ul>
-
                   {% for feature in plan.features or [] %}
-
-                    <li data-block-id="{{ block_id }}" data-field-path="plans.{{ loop.parent.index0 }}.features.{{ loop.index0 }}">{{ feature or "" }}</li>
-
+                    <li data-block-id="{{ block_id }}" data-field-path="plans.{{ plan_index }}.features.{{ loop.index0 }}">{{ feature or "" }}</li>
                   {% endfor %}
-
                 </ul>
-
               </article>
-
             {% endfor %}
 
           </div>
@@ -661,7 +1018,7 @@ BLOCK_TEMPLATES: dict[str, Template] = {
 
 
 
-def render_block(block: BlockInstance, locale: str, settings: dict[str, Any]) -> str:
+def render_block(block: BlockInstance, locale: str, settings: dict[str, Any]) -> RenderedBlock:
 
     template = BLOCK_TEMPLATES.get(block.definition.key)
 
@@ -675,11 +1032,27 @@ def render_block(block: BlockInstance, locale: str, settings: dict[str, Any]) ->
 
     style_attr = _style_to_attr(payload.pop("style", None))
 
+    dynamic = _render_dynamic_block(block, payload, style_attr)
+    if dynamic:
+        return dynamic
+
     if template is None:
 
-        return f"<section style=\"{style_attr}\"><pre>{payload}</pre></section>"
+        block_id = block.id or block.order_index or 0
 
-    return template.render(style_attr=style_attr, block=block, is_video_url=is_video_url, **payload)
+        attrs = [f'data-block-section="{block_id}"']
+
+        if style_attr:
+
+            attrs.append(f'style="{style_attr}"')
+
+        return RenderedBlock(html=f"<section {' '.join(attrs)}><pre>{payload}</pre></section>")
+
+    return RenderedBlock(
+
+        html=template.render(style_attr=style_attr, block=block, is_video_url=is_video_url, **payload)
+
+    )
 
 
 
@@ -739,13 +1112,22 @@ def render_project_html(project: Project, locale: str | None = None) -> str:
 
     )
 
-    content = "\n".join(
-
+    rendered_blocks = [
         render_block(block, selected_locale, settings)
-
         for block in sorted(project.blocks, key=lambda b: b.order_index)
+    ]
 
-    )
+    style_tags: dict[str, str] = {}
+    content_parts: list[str] = []
+    for rendered in rendered_blocks:
+        content_parts.append(rendered.html)
+        if rendered.style_key and rendered.style_rules and rendered.style_key not in style_tags:
+            style_tags[rendered.style_key] = (
+                f'<style data-block-style="{rendered.style_key}">\n{rendered.style_rules}\n</style>'
+            )
+
+    style_html = "\n".join(style_tags.values())
+    content = "\n".join(part for part in ([style_html] if style_html else []) + content_parts)
 
     return BASE_TEMPLATE.render(
 
@@ -820,6 +1202,26 @@ def snapshot_project(project: Project) -> dict[str, Any]:
                 "id": block.id,
 
                 "definition_key": block.definition.key,
+
+                "definition": {
+
+                    "key": block.definition.key,
+
+                    "name": block.definition.name,
+
+                    "category": block.definition.category,
+
+                    "version": block.definition.version,
+
+                    "schema": block.definition.schema,
+
+                    "default_config": block.definition.default_config,
+
+                    "template_markup": getattr(block.definition, "template_markup", None),
+
+                    "template_styles": getattr(block.definition, "template_styles", None),
+
+                },
 
                 "order_index": block.order_index,
 

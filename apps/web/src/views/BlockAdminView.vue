@@ -80,6 +80,43 @@
               Default config (JSON)
               <textarea v-model="form.default_config" rows="6"></textarea>
             </label>
+            <section class="template-fields">
+              <header>
+                <div>
+                  <p class="field-title">Custom template</p>
+                  <small>HTML/Jinja + CSS, которые используются при публикации и в Live Preview.</small>
+                </div>
+                <span :class="['badge', hasCustomTemplate ? 'success' : 'ghost']">
+                  {{ hasCustomTemplate ? "Активен" : "По умолчанию" }}
+                </span>
+              </header>
+              <div class="row template-inputs">
+                <label>
+                  Template markup (Jinja + helpers)
+                  <textarea
+                    v-model="form.template_markup"
+                    rows="8"
+                    placeholder='Например: {{ helpers.text("headline", tag="h2", classes="hero-title") }}'
+                    spellcheck="false"
+                  ></textarea>
+                </label>
+                <label>
+                  Template styles (CSS)
+                  <textarea
+                    v-model="form.template_styles"
+                    rows="8"
+                    placeholder='[data-template-key="{{ form.key || "block-key" }}"] .card { ... }'
+                    spellcheck="false"
+                  ></textarea>
+                </label>
+              </div>
+              <p class="helper">Подсказки:</p>
+              <ul class="helper-list" v-pre>
+                <li><code>{{ helpers.text("headline", tag="h2") }}</code> — текстовое поле с inline-редактированием.</li>
+                <li><code>{{ helpers.asset("image_url", classes="media") }}</code> — изображение/видео с выбором из медиатеки.</li>
+                <li><code>{% for item in helpers.list_items("stats") %}{{ helpers.item_text(item, "value") }}{% endfor %}</code> — цикл по массиву.</li>
+              </ul>
+            </section>
             <div class="actions">
               <button type="submit" class="primary">
                 {{ form.id ? "Сохранить изменения" : "Создать блок" }}
@@ -252,6 +289,8 @@ type BlockFormState = {
   version: string;
   schema: string;
   default_config: string;
+  template_markup: string;
+  template_styles: string;
 };
 
 const form = reactive<BlockFormState>({
@@ -262,7 +301,9 @@ const form = reactive<BlockFormState>({
   description: "",
   version: "1.0.0",
   schema: "[]",
-  default_config: "{}"
+  default_config: "{}",
+  template_markup: "",
+  template_styles: ""
 });
 
 const templateForm = reactive({
@@ -290,6 +331,10 @@ const prettyDefaultConfig = computed(() => {
   }
 });
 
+const hasCustomTemplate = computed(() => {
+  return Boolean(form.template_markup.trim() || form.template_styles.trim());
+});
+
 onMounted(() => {
   store.fetchBlocks();
   store.fetchTemplates();
@@ -309,6 +354,8 @@ function selectBlock(block: BlockDefinition) {
   form.version = block.version;
   form.schema = JSON.stringify(block.schema, null, 2);
   form.default_config = JSON.stringify(block.default_config, null, 2);
+  form.template_markup = block.template_markup ?? "";
+  form.template_styles = block.template_styles ?? "";
 }
 
 function resetForm() {
@@ -320,6 +367,8 @@ function resetForm() {
   form.version = "1.0.0";
   form.schema = "[]";
   form.default_config = "{}";
+  form.template_markup = "";
+  form.template_styles = "";
 }
 
 async function save() {
@@ -340,7 +389,9 @@ async function save() {
     description: form.description,
     version: form.version,
     schema: parsedSchema,
-    default_config: parsedConfig
+    default_config: parsedConfig,
+    template_markup: form.template_markup.trim() || null,
+    template_styles: form.template_styles.trim() || null
   };
 
   if (form.id) {
@@ -648,6 +699,56 @@ textarea {
   padding: 12px;
   overflow-x: auto;
   font-size: 0.85rem;
+}
+
+.template-fields {
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f8fafc;
+}
+
+.template-fields header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.template-fields .field-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.template-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.template-inputs textarea {
+  min-height: 180px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+}
+
+.helper-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.helper-list code {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 6px;
+  padding: 2px 6px;
 }
 
 .form-view {

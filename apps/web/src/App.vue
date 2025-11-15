@@ -35,6 +35,7 @@
               <small>{{ userSubtitle }}</small>
             </div>
           </div>
+          <button class="logout-btn" type="button" @click="handleLogout">Выйти</button>
         </div>
       </header>
       <main>
@@ -46,7 +47,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watchEffect } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ThemeToggle from "@/components/ThemeToggle.vue";
 import { useAuthStore } from "@/stores/auth";
 
@@ -62,10 +63,11 @@ const navLinks: NavLink[] = [
   { label: "Editor", to: "/editor", icon: "🛠️" },
   { label: "Marketplace", to: "/marketplace", icon: "🧩" },
   { label: "Analytics", to: "/analytics", icon: "📈" },
-  { label: "Block Admin", to: "/admin/blocks", icon: "🧱", adminOnly: true }
+  { label: "Block Admin", to: "/admin/blocks", icon: "🧱", adminOnly: true },
 ];
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 
 const brandTagline =
@@ -117,6 +119,11 @@ function isActive(path: string) {
     return route.path === "/";
   }
   return route.path.startsWith(path);
+}
+
+function handleLogout() {
+  auth.logout();
+  router.push({ name: "login" });
 }
 </script>
 
@@ -273,12 +280,27 @@ nav a.active {
   font-size: 0.75rem;
 }
 
+.logout-btn {
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.25);
+}
+
 main {
   padding: 32px;
   background: transparent;
 }
 </style>
-
-
 
 

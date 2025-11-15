@@ -1,146 +1,76 @@
-# Архитектура Renderly
+﻿# ARCHITECTURE
 
-Документ описывает то, как устроена платформа изнутри: из каких сервисов она состоит, где лежат критичные данные и какие потоки информации нужно учитывать при сопровождении и развитии.
+Документ описывает устройство Renderly: компоненты, хранилища данных, пайплайны публикации и marketplace.
 
-## 1. Высокоуровневая схема
-
-```
+## 1. Сервисы и окружение
+`
 ┌──────────────┐      https       ┌────────────────────────┐
-│ Vue SPA (web)├──axios/json─────▶│ FastAPI BFF (apps/api) │
+│ Vue SPA      ├──axios/json────▶│ FastAPI BFF            │
+│ (apps/web)   │                  │ (apps/api)             │
 └─────┬────────┘                  └─────┬─────────┬────────┘
-      │ assets/upload/export            │         │
-      │                                 │         │
-      │                       SQLAlchemy│         │RQ (Redis)
-      │                                 │         │
+      │ assets / export                 │         │
+      │                                 │         │RQ (Redis)
       ▼                                 ▼         ▼
 ┌──────────────┐      S3 API     ┌──────────────┐ ┌──────────────┐
-│ MinIO buckets│◀───────────────▶│ PostgreSQL   │ │ Worker (RQ)  │
-│ pages/assets │                 │ (state)      │ │ forms/tasks  │
+│ MinIO        │◀───────────────▶│ PostgreSQL   │ │ Worker (RQ)  │
+│ pages/assets │                 │ state/config │ │ webhooks etc │
 └──────────────┘                 └──────────────┘ └──────────────┘
                                          │
                                          │HTTP
                                          ▼
                                   ┌──────────────┐
-                                  │Domain manager│
-                                  │ + nginx edge │
+                                  │Domain Manager│
+                                  │+ nginx proxy │
                                   └──────────────┘
-```
+`
+- **apps/web** — SPA на Vue 3 + Pinia. Основные страницы: Dashboard, Editor, ProjectSettings, Marketplace, BlockAdmin, ShareView. API-клиент (src/api/client.ts) автоматически прокидывает JWT.
+- **apps/api** — FastAPI, SQLAlchemy 2.0, Alembic. Слои: pp/api/routes/*, pp/models/*, pp/schemas/*, pp/services/* (publisher, localization, block registry и т.д.).
+- **infra** — docker-compose (api, web, db, redis, minio, worker, domain-manager, nginx proxy). По умолчанию VITE_API_URL=http://localhost:8000/api и BACKEND_CORS_ORIGINS=["http://localhost:5173"].
 
-## 2. Веб‑клиент (`apps/web`)
+## 2. Данные
+| Сущность | Назначение |
+| --- | --- |
+| Project | Заголовок, slug, описание, theme, settings (loc/locale, footer, etc.), список блоков (BlockInstance). |
+| BlockDefinition | Каталог блоков. Поля schema, default_config, ui_meta, 	emplate_markup, 	emplate_styles. Управляется через Block Admin. |
+| BlockInstance | Конкретный блок в проекте: definition_id, config, 	ranslations, order_index. |
+| CommunityTemplate | Marketplace-шаблон: snapshot проекта + метаданные (owner, category, tags). |
+| TemplateSnapshot (JSON) | Результат snapshot_project: project + locks. Каждый блок хранит definition_key, config, 	ranslations и сериализованное определение (schema + markup + styles). |
+| ThemeTemplate, ProjectDomain, ProjectShareLink, FormSubmission, AuditEvent | дополнительные подсистемы (темы, домены, шаринг, формы, аудит). |
 
-- SPA на Vue 3 + TypeScript. Точка входа: `src/main.ts`, глобальная компоновка — `App.vue`.
-- Pinia‑stores (`src/stores/*`):
-  - `auth.ts` — управление токеном, профилем, ролью администратора.
-  - `project.ts` — текущее дерево блоков, порядок, локализации, undo/redo история.
-  - `blockAdmin.ts` — CRUD для библиотечных дефиниций.
-  - `onboarding.ts`, `history.ts` — вспомогательные UI‑состояния.
-- Основные вьюхи (`src/views`):
-  - `DashboardView.vue` — список проектов, карточки, быстрые действия.
-  - `EditorView.vue` — трёхпанельный редактор (палитра блоков, форма настроек, предпросмотр).
-  - `ProjectSettings.vue` — домены, участники, публикации, share‑links.
-  - `MarketplaceView.vue` — каталог шаблонов и импорт.
-  - `AnalyticsView.vue` — графики и таблицы по лидам.
-  - `LoginView.vue` + `ShareView.vue` — отдельные режимы (авторизация и публичный просмотр).
-- Компоненты:
-  - `BlockPalette.vue`, `BlockForm.vue`, `LivePreview.vue` — ядро редактора.
-  - `TemplatePreview.vue`, `ThemeDesigner.vue`, `BlockAdminView.vue` — управление библиотекой.
-  - `ThemeToggle.vue`, `AssetUploader`, `FormBuilder` (внутри `components/BlockForm.vue`) — вспомогательные элементы.
-- Взаимодействие с API через `axios` экземпляр (`src/api/http.ts`), глобально прокинутые baseURL (`VITE_API_URL`). Ошибки централизованно перехватываются в interceptors (flash‑уведомления, 401 → logout).
+## 3. Рендеринг и предпросмотр
+1. **Editor** использует LivePreview.vue, который собирает HTML через /api/projects/{id}/render (SSR) и позволяет inline-редактировать поля (Bridge-плагин добавляет data-field-path).
+2. **Publisher** (pp/services/publisher.py) рендерит проект целиком (ender_project_html). Для кастомных блоков используется _render_dynamic_block: берётся Jinja-шаблон из BlockDefinition.template_markup, helper-обёртки (TemplateHelpers) проставляют data-field-* и плейсхолдеры ассетов. CSS (	emplate_styles) вставляется один раз на страницу.
+3. **snapshot_project** сохраняет project metadata и список блоков с их определениями — это позволяет воспроизводить шаблоны на любой инсталляции.
 
-## 3. API/Backend (`apps/api/app`)
+## 4. Marketplace и шаблоны
+- Публикация (POST /api/templates): берём проект → snapshot_project → сохраняем CommunityTemplate + thumbnail. Проект должен быть shared/public.
+- Предпросмотр (GET /api/templates/{id}/preview):
+  1. Достаём snapshot.
+  2. Создаём PreviewProject (title/theme/settings + список PreviewBlock). Если Definition с таким ключом есть в БД — берём его; иначе строим inline-Definition из snapshot (schema + markup/styles).
+  3. Рендерим через ender_project_html, возвращаем HTML. Endpoint добавляет заголовок Access-Control-Allow-Origin, поэтому TemplatePreview.vue может грузить его с любого фронтового домена.
+- Импорт (POST /api/templates/{id}/import): создаётся новый Project из snapshot. Если Definition отсутствует, он создаётся/обновляется на основе данных шаблона.
 
-### 3.1 Каркас
+## 5. Блоки и Block Admin
+- Каталог (/api/catalog/blocks) отдаёт список BlockDefinition (schema + default_config + мета). SPA использует его в BlockPalette и BlockForm.
+- Block Admin даёт CRUD плюс поля Custom template. После сохранения publisher/Live Preview автоматически используют новые шаблоны.
+- Пример urora-showcase хранится в сид-данных (pps/api/app/seeds/block_definitions.json). Он демонстрирует использование badge/градиента/CTA и списка stats.
 
-- `main.py` — создание приложения FastAPI, подключение CORS, регистрация роутеров и middleware логирования запросов.
-- Конфигурация (`app/core/config.py`) на Pydantic Settings: Postgres, Redis, MinIO, параметры доменов, лимиты ассетов.
-- Подсистемы:
-  - `app/api/routes/*` — модули FastAPI, сгруппированные по контекстам (projects, analytics, forms, share_links, templates, publish, assets, themes, auth, users, audit, health).
-  - `app/models/*` — SQLAlchemy 2.0 модели (Project, BlockDefinition/Instance, ThemeTemplate, ProjectMember, ShareLink, FormSubmission, Asset, AuditEvent и т.д.).
-  - `app/schemas/*` — Pydantic DTO для валидации/ответов.
-  - `app/services/*` — доменная логика: publisher (генерация HTML), access (RBAC), localization, audit, forms (enqueue), assets (MinIO), custom_domains, domain_manager.
-  - `app/core/tasks.py` + `worker.py` — инициализация очереди RQ и запуск воркера.
+## 6. Публикация и домены
+1. Пользователь запускает Publish → POST /api/publish. В фоне worker генерирует HTML, складывает его и ассеты в MinIO, обновляет запись проекта (версия, published_at).
+2. Если подключены домены, Domain Manager проверяет CNAME, создаёт статическую директорию под домен и проксирует через nginx.
+3. Для custom доменов в .env задаются CUSTOM_DOMAIN_*, PROJECT_SUBDOMAIN_ROOT и PORTAL_URL.
 
-### 3.2 Ключевые эндпоинты
+## 7. Share links и SSR
+- Share link (ProjectShareLink) содержит токен, права (allow_comments), срок действия. Ссылки создаются в UI ProjectSettings.
+- ShareView.vue рендерит проект через SSR endpoint /api/share-links/{token}: HTML тот же, что используется при публикации.
+- Комментарии хранятся в ProjectShareComment и показываются в ShareView/Marketplace.
 
-- **Аутентификация (`auth.py`)**: выдача JWT (email+password), refresh, текущий пользователь.
-- **Каталог блоков/тем (`catalog.py`, `themes.py`, `block_admin` внутри `projects.py`)**: CRUD блоков, дефолтные конфиги, предпросмотры.
-- **Проекты (`projects.py`)**: CRUD проектов, операции с блоками, импорт/экспорт JSON/HTML, управление ревизиями (`services/revision_service.py`) и локалями.
-- **Публикация (`publish.py`)**: сборка HTML (`render_project_html`), выгрузка в MinIO (`rendered_pages`), получение публичной ссылки и метаданных.
-- **Share links (`share_links.py`)**: генерация токенов, публичные SSR ответы `/api/shares/{token}`, комментарии гостей.
-- **Настройки/домены (`project_domains` внутри `projects.py`)**: выпуск и проверка токена CNAME, сохранение HTML в FS (`services/custom_domains.py`).
-- **Формы и аналитика (`forms.py`, `analytics.py`)**: запись submissions, постановка в очередь `enqueue_submission`, статистика по проектам/датам/статусам.
-- **Ассеты (`assets.py`, `assets_router.py`)**: presign URL, скачивание контента через защищённый proxy, миниатюры.
-- **Marketplace (`templates.py`)**: публикация шаблонов в таблицу `community_template`, импорт в проект.
+## 8. Фоновые задачи и вебхуки
+- RQ-воркер (pps/api/app/worker.py) слушает очередь webhooks: публикация, рассылки, интеграции.
+- Конфигурация очереди задаётся REDIS_URL. Старт воркера см. docker-compose (service worker).
 
-### 3.3 Доступы и аудит
+## 9. Dev / Prod
+- Dev: docker compose up --build, автоматическая перезагрузка uvicorn, Vite dev server на 5173 порту.
+- Prod: используем infra/DEPLOYMENT.md — там описаны требования, переменные окружения, запуск миграций и сидов.
 
-- `services/access.py` — резолв проекта + роль (owner/editor/viewer) из `ProjectMember`.
-- `services/audit.py` — запись JSON‑payload в `audit_event`, просмотр истории `/api/audit/project/{id}`.
-- `ProjectVisibility` и share‑links позволяют публичный просмотр без авторизации (read‑only Pydantic модели).
-
-## 4. Асинхронная обработка
-
-- Очередь `webhooks` в Redis (`core/tasks.py`) обслуживается воркером `app/worker.py`.
-- `services/forms.enqueue_submission` ставит задачу `process_submission`, которая:
-  1. Помечает submission как `processing`, увеличивает счётчик попыток.
-  2. Имитирует webhook (`_perform_webhook`) либо отправляет реальный POST (можно расширить).
-  3. Логирует попытки в `form_webhook_log` (успех/ошибка).
-- В воркере также можно триггерить другие задачи (например, offload публикации или генерацию превью) — очередь уже готова.
-
-## 5. Хранилища и ключевые сущности
-
-| Слой           | Сущности/файлы                                                | Назначение |
-|----------------|---------------------------------------------------------------|------------|
-| PostgreSQL     | `project`, `block_definition`, `block_instance`, `project_member`, `project_domain`, `project_share_link`, `project_share_comment`, `project_revision`, `theme_template`, `form_submission`, `form_webhook_log`, `asset`, `audit_event`, `community_template` | Состояние редактора, доступы, публикации, marketplace, аудит |
-| MinIO bucket `renderly-pages` | HTML снапшоты (`services/publisher.py`, `publish.py`) | Хостинг опубликованных версий по поддоменам |
-| MinIO bucket `renderly-assets` | Загруженные файлы пользователей (`services/assets.py`) | Используется блоками галереи/форм, выдаётся через presigned URL |
-| Redis          | Очереди RQ, хэш заданий                                      | Асинхронная обработка, повторные попытки |
-| Файловая система (`custom-domains` volume) | `services/custom_domains.py` | HTML для кастомных доменов, которые обслуживает `infra/nginx/domains` |
-
-## 6. Критические пользовательские потоки
-
-1. **Редактирование проекта**
-   - SPA вызывает `/api/projects/{id}` и `/api/catalog/definitions`.
-   - Изменения блоков → `PUT /projects/{id}/blocks/{block_id}`, ревизии пишутся через `revision_service`.
-   - Настройки темы/локалей → `PUT /projects/{id}` с полями `theme`, `settings.locales`.
-
-2. **Публикация**
-   - `POST /api/publish/{project_id}` вызывает `snapshot_project`, рендерит HTML, кладёт файл в MinIO и отдаёт ссылку `/preview`.
-   - Для кастомных доменов HTML складывается в локальную директорию (`/var/renderly/domains/<domain>/index.html`), nginx обслуживает статику.
-
-3. **Совместный доступ**
-   - Editor создаёт share‑link (`POST /projects/{id}/share-links`), получает токен.
-   - Гость открывает `/share/:token` (SPA), который дергает `/api/shares/{token}`, получает HTML и JSON.
-   - Комментарии пишутся анонимно (`POST /api/shares/{token}/comments`), сохраняются в Postgres.
-
-4. **Заявка через форму**
-   - Публичная страница отправляет POST на `/api/forms/submit` (без авторизации, но с `project_id`/`block_id`).
-   - Submission попадает в таблицу и очередь. Worker эмулирует webhook, меняет статус на `sent/failed`.
-   - Аналитика считывает агрегаты напрямую из `form_submission`.
-
-5. **Кастомный домен**
-   - Пользователь добавляет домен в `ProjectSettings.vue`, API создаёт запись `project_domain` с токеном.
-   - Domain Manager (`apps/domain-manager`) через `/verify` проверяет CNAME.
-   - После успеха публикуется HTML и nginx (контейнер `proxy`) начинает обслуживать домен.
-
-## 7. Наблюдаемость, безопасность и качество
-
-- **Логирование**: `app/core/logging.py` настраивает формат JSON + stdout. Middleware `request_logging_middleware` фиксирует латентность каждого запроса.
-- **Health**: `/api/healthz` (DB ping + версия). Domain Manager — `/healthz`.
-- **OpenAPI & docs**: `/api/docs` (Swagger) и `/api/openapi.json`.
-- **Тесты**: `apps/api/tests` (pytest), `apps/web/src/views/__tests__` и `stores/__tests__` (Vitest).
-- **CI**: `.github/workflows/ci.yml` (линтеры, pytest, vitest, docker build).
-- **Безопасность**:
-  - JWT + refresh, хранение токена в Pinia + localStorage.
-  - Ролевая модель (`ProjectRole`) защищает роуты.
-  - Пресайн ссылки на ассеты подписаны HMAC (`assets.generate_asset_token`), проверяются при скачивании.
-  - Share‑links имеют срок действия и счётчик обращений.
-  - Доменные операции вынесены в отдельный сервис без прямого доступа в основное API.
-
-## 8. Связанные документы
-
-- [`README.md`](README.md) — обзор и быстрый старт.
-- [`FEATURES.md`](FEATURES.md) — пользовательские сценарии, соответствие UI ↔ API.
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) — как развернуть стек в production.
-
-Если требуется доработать архитектуру (например, добавить фоновые билд‑пайплайны или метрики Prometheus) — внесите изменения сюда и ссылку в README.
+Этот документ отражает текущую архитектуру после добавления кастомных шаблонов в Block Admin и поддержки marketplace-предпросмотра.

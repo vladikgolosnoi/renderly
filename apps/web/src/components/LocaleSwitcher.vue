@@ -78,13 +78,14 @@ function addLocale() {
 
 <style scoped>
 .locale-switcher {
-  background: #fff;
+  background: var(--panel-surface);
   border-radius: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: var(--panel-shadow);
 }
 
 header {
@@ -97,8 +98,8 @@ header {
 
 .active-label {
   font-size: 0.85rem;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--text-secondary);
+  background: var(--panel-soft);
   padding: 6px 10px;
   border-radius: 999px;
 }
@@ -110,18 +111,19 @@ header {
 }
 
 .locale-chip {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--divider-color);
   border-radius: 12px;
   padding: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  background: var(--panel-soft);
 }
 
 .locale-chip.active {
-  border-color: #2563eb;
-  background: #f0f4ff;
+  border-color: var(--accent);
+  background: var(--accent-muted);
 }
 
 .chip-main {
@@ -134,7 +136,7 @@ header {
 
 .chip-main small {
   font-weight: 400;
-  color: #475569;
+  color: var(--text-secondary);
   margin-left: 6px;
 }
 
@@ -145,13 +147,13 @@ header {
 }
 
 .ghost {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--divider-color);
   background: transparent;
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 0.85rem;
   cursor: pointer;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .add-form {
@@ -166,26 +168,29 @@ header {
   flex-direction: column;
   gap: 4px;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 input {
   border-radius: 12px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--input-border);
   padding: 8px 12px;
+  background: var(--input-bg);
+  color: var(--input-text);
 }
 
 button[type="submit"] {
   border: none;
-  background: #2563eb;
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
   color: #fff;
   border-radius: 12px;
   padding: 10px 16px;
   cursor: pointer;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
 }
 
 .empty {
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 </style>

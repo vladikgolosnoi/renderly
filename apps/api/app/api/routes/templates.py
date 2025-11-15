@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
@@ -238,9 +239,10 @@ def add_template_comment(
 @router.get("/{template_id}/preview")
 def template_preview(
     template_id: int,
+    request: Request,
     lang: str | None = Query(default=None),
     db: Session = Depends(get_db),
-) -> dict[str, Any]:
+) -> JSONResponse:
     template = db.get(CommunityTemplate, template_id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
@@ -269,11 +271,13 @@ def template_preview(
     class PreviewBlock:
         def __init__(
             self,
+            block_id: int | None,
             definition: Any,
             order_index: int,
             config: dict[str, Any],
             translations: dict[str, Any],
         ):
+            self.id = block_id
             self.definition = definition
             self.order_index = order_index
             self.config = config
@@ -298,13 +302,20 @@ def template_preview(
         definition: Any = definitions.get(key)
         if definition is None:
             class InlineDefinition:
-                def __init__(self, inline_key: str | None):
-                    self.key = inline_key or "custom"
-                    self.default_config: dict[str, Any] = {}
+                def __init__(self, inline_key: str | None, data: dict[str, Any]):
+                    self.key = data.get("key") or inline_key or "custom"
+                    self.name = data.get("name")
+                    self.category = data.get("category")
+                    self.version = data.get("version")
+                    self.schema = data.get("schema") or []
+                    self.default_config = data.get("default_config") or {}
+                    self.template_markup = data.get("template_markup")
+                    self.template_styles = data.get("template_styles")
 
-            definition = InlineDefinition(key)
+            definition = InlineDefinition(key, block_data.get("definition") or {})
         preview_blocks.append(
             PreviewBlock(
+                block_id=block_data.get("id"),
                 definition=definition,
                 order_index=block_data.get("order_index", order),
                 config=block_data.get("config")
@@ -321,11 +332,18 @@ def template_preview(
         "<style>body::-webkit-scrollbar{display:none;}body{scrollbar-width:none;}</style></head>",
         1,
     )
-    return {
+    payload = {
         "html": preview_html,
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "template_id": template.id,
     }
+    response = JSONResponse(payload)
+    origin = request.headers.get("origin") if request else None
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 
 def _create_project_from_snapshot(
@@ -362,7 +380,37 @@ def _create_project_from_snapshot(
         key = block_data.get("definition_key")
         definition = definitions.get(key)
         if not definition:
-            continue
+            definition_payload = block_data.get("definition") or {}
+            inline_key = definition_payload.get("key") or key
+            if not inline_key:
+                continue
+            definition = db.query(BlockDefinition).filter(BlockDefinition.key == inline_key).first()
+            if not definition:
+                definition = BlockDefinition(
+                    key=inline_key,
+                    name=definition_payload.get("name") or inline_key,
+                    category=definition_payload.get("category") or "content",
+                    version=definition_payload.get("version") or "1.0.0",
+                    schema=definition_payload.get("schema") or [],
+                    default_config=definition_payload.get("default_config") or {},
+                    template_markup=definition_payload.get("template_markup"),
+                    template_styles=definition_payload.get("template_styles"),
+                )
+                db.add(definition)
+                db.flush()
+            else:
+                # обновим шаблон, если в снапшоте есть более свежая версия
+                if definition_payload.get("template_markup"):
+                    definition.template_markup = definition_payload.get("template_markup")
+                if definition_payload.get("template_styles"):
+                    definition.template_styles = definition_payload.get("template_styles")
+                if definition_payload.get("schema"):
+                    definition.schema = definition_payload["schema"]
+                if definition_payload.get("default_config"):
+                    definition.default_config = definition_payload["default_config"]
+                db.add(definition)
+                db.flush()
+            definitions[inline_key] = definition
         db.add(
             BlockInstance(
                 project_id=project.id,

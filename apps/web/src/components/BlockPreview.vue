@@ -49,6 +49,173 @@
       </div>
     </template>
 
+    <template v-else-if="block.definition_key === 'speaker-highlight'">
+      <div class="speaker-card" :class="speakerLayoutClass" :style="speakerCardStyle">
+        <div class="speaker-content">
+          <span v-if="textValue('badge_label')" class="speaker-badge" :style="{ background: speakerBadgeColor }">
+            <InlineEditableField
+              class="bare badge-field"
+              label="Badge"
+              :value="textValue('badge_label')"
+              placeholder="Бейдж"
+              @change="updateField('badge_label', $event)"
+            />
+          </span>
+          <InlineEditableField
+            class="bare eyebrow"
+            label="Eyebrow"
+            :value="textValue('eyebrow')"
+            placeholder="Eyebrow"
+            @change="updateField('eyebrow', $event)"
+          />
+          <InlineEditableField
+            class="bare headline"
+            label="Headline"
+            :value="textValue('headline')"
+            placeholder="Заголовок"
+            @change="updateField('headline', $event)"
+          />
+          <InlineEditableField
+            class="bare subtitle"
+            label="Subtitle"
+            :value="textValue('subtitle')"
+            placeholder="Подзаголовок"
+            @change="updateField('subtitle', $event)"
+          />
+          <InlineEditableField
+            class="bare description"
+            label="Description"
+            :value="textValue('description')"
+            placeholder="Описание"
+            multiline
+            @change="updateField('description', $event)"
+          />
+          <div v-if="speakerChipsList.length" class="speaker-chips">
+            <span v-for="chip in speakerChipsList" :key="chip">{{ chip }}</span>
+          </div>
+          <div v-if="speakerTags.length" class="speaker-tags">
+            <span v-for="(tag, index) in speakerTags" :key="`tag-${index}`">
+              <strong>{{ stringValue(tag.icon) }}</strong>
+              {{ stringValue(tag.title) }}
+            </span>
+          </div>
+          <div class="speaker-cta">
+            <button type="button">
+              <InlineEditableField
+                class="bare primary-cta"
+                label="Primary CTA"
+                :value="textValue('cta_primary_label')"
+                placeholder="Главная кнопка"
+                @change="updateField('cta_primary_label', $event)"
+              />
+            </button>
+            <button type="button" class="ghost">
+              <InlineEditableField
+                class="bare secondary-cta"
+                label="Secondary CTA"
+                :value="textValue('cta_secondary_label')"
+                placeholder="Вторая кнопка"
+                @change="updateField('cta_secondary_label', $event)"
+              />
+            </button>
+          </div>
+          <div v-if="speakerStats.length" class="speaker-stats">
+            <article v-for="(stat, index) in speakerStats" :key="`stat-${index}`">
+              <strong>{{ stringValue(stat.value) }}</strong>
+              <small>{{ stringValue(stat.label) }}</small>
+            </article>
+          </div>
+        </div>
+        <div class="speaker-avatar" :class="speakerAvatarShape" @click.stop="requestAsset('avatar', 'Фото спикера')">
+          <img :src="textValue('avatar') || avatarPlaceholder" :alt="textValue('headline') || 'speaker avatar'" />
+        </div>
+      </div>
+    </template>
+
+    <template v-else-if="block.definition_key === 'aurora-showcase'">
+      <section class="aurora-preview">
+        <div class="aurora-card" :style="auroraCardStyle">
+          <span v-if="textValue('badge_label')" class="aurora-badge" :style="{ background: auroraBadgeColor }">
+            <InlineEditableField
+              class="bare"
+              label="Badge"
+              :value="textValue('badge_label')"
+              placeholder="Badge"
+              @change="updateField('badge_label', $event)"
+            />
+          </span>
+          <InlineEditableField
+            class="bare eyebrow"
+            label="Eyebrow"
+            :value="textValue('eyebrow')"
+            placeholder="Eyebrow"
+            @change="updateField('eyebrow', $event)"
+          />
+          <InlineEditableField
+            class="bare aurora-headline"
+            label="Headline"
+            :value="textValue('headline')"
+            placeholder="Заголовок"
+            @change="updateField('headline', $event)"
+          />
+          <InlineEditableField
+            class="bare aurora-description"
+            label="Description"
+            :value="textValue('description')"
+            placeholder="Описание"
+            multiline
+            @change="updateField('description', $event)"
+          />
+          <div class="aurora-cta">
+            <button type="button" class="primary">
+              <InlineEditableField
+                class="bare"
+                label="Primary CTA"
+                :value="textValue('primary_cta_label')"
+                placeholder="Primary CTA"
+                @change="updateField('primary_cta_label', $event)"
+              />
+            </button>
+            <button type="button" class="ghost">
+              <InlineEditableField
+                class="bare"
+                label="Secondary CTA"
+                :value="textValue('secondary_cta_label')"
+                placeholder="Secondary CTA"
+                @change="updateField('secondary_cta_label', $event)"
+              />
+            </button>
+          </div>
+          <div class="aurora-stats" v-if="auroraStats.length">
+            <article v-for="(stat, index) in auroraStats" :key="`aurora-stat-${index}`">
+              <InlineEditableField
+                class="bare stat-value"
+                label="Value"
+                :value="stringValue(stat.value)"
+                placeholder="+120%"
+                @change="updateListField('stats', index, 'value', $event)"
+              />
+              <InlineEditableField
+                class="bare stat-label"
+                label="Label"
+                :value="stringValue(stat.label)"
+                placeholder="Metric"
+                @change="updateListField('stats', index, 'label', $event)"
+              />
+            </article>
+          </div>
+        </div>
+        <figure
+          class="aurora-media"
+          :class="`shape-${auroraImageShape}`"
+          @click.stop="requestAsset('image_url', 'Aurora media')"
+        >
+          <img :src="assetValue('image_url')" alt="Aurora media" />
+          <button type="button">Сменить медиа</button>
+        </figure>
+      </section>
+    </template>
+
     <template v-else-if="block.definition_key === 'feature-grid'">
       <div class="feature-grid">
         <InlineEditableField
@@ -386,6 +553,49 @@ const placeholderImage = "https://placehold.co/600x400/e2e8f0/94a3b8?text=media"
 const avatarPlaceholder = "https://placehold.co/160x160/fff/94a3b8?text=avatar";
 
 const fallbackTitle = computed(() => props.definition?.name ?? props.block.definition_key);
+const speakerCardStyle = computed(() => {
+  const bg = textValue("bg_color") || "#111827";
+  const start = textValue("gradient_start");
+  const end = textValue("gradient_end");
+  const gradient = start && end ? `linear-gradient(135deg, ${start}, ${end})` : null;
+  return {
+    background: gradient || bg,
+    color: textValue("text_color") || "#f8fafc",
+    boxShadow: textValue("card_shadow") || "0 30px 70px rgba(15, 23, 42, 0.4)"
+  };
+});
+const speakerBadgeColor = computed(() => textValue("badge_color") || "#f9769b");
+const speakerLayoutClass = computed(() => {
+  const layout = textValue("layout").toLowerCase();
+  return layout === "right" ? "layout-right" : "layout-left";
+});
+const speakerChipsList = computed(() => {
+  const raw = textValue("chips");
+  if (!raw) return [];
+  return raw.split(",").map((chip) => chip.trim()).filter(Boolean);
+});
+const speakerAvatarShape = computed(() => {
+  const shape = textValue("avatar_shape").toLowerCase();
+  return shape === "square" ? "shape-square" : "shape-circle";
+});
+const speakerStats = computed(() => listValue("stats"));
+const speakerTags = computed(() => listValue("tags"));
+const auroraGradient = computed(() => {
+  const start = textValue("gradient_start") || "#312e81";
+  const end = textValue("gradient_end") || "#111827";
+  return `linear-gradient(135deg, ${start}, ${end})`;
+});
+const auroraCardStyle = computed(() => ({
+  background: auroraGradient.value,
+  color: textValue("card_text_color") || "#ffffff",
+  boxShadow: "0 25px 55px rgba(15, 23, 42, 0.35)"
+}));
+const auroraBadgeColor = computed(() => textValue("badge_color") || "#f472b6");
+const auroraStats = computed(() => listValue("stats"));
+const auroraImageShape = computed(() => {
+  const shape = textValue("image_shape").toLowerCase();
+  return shape === "circle" ? "circle" : "rounded";
+});
 
 function localizedConfig() {
   const config = props.block.config ?? {};
@@ -721,5 +931,233 @@ function requestListAsset(listKey: string, index: number, subKey: string, label:
   text-align: center;
   color: #94a3b8;
 }
-</style>
 
+.speaker-card {
+  border-radius: 32px;
+  padding: 32px;
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.speaker-card.layout-right .speaker-avatar {
+  order: -1;
+}
+
+.speaker-content {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.speaker-badge {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.speaker-card .headline :deep(.editable) {
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.speaker-card .subtitle :deep(.editable) {
+  font-size: 1.1rem;
+  opacity: 0.85;
+}
+
+.speaker-card .description :deep(.editable) {
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.speaker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.speaker-chips span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.85rem;
+}
+
+.speaker-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.speaker-tags strong {
+  font-size: 1rem;
+}
+
+.speaker-cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.speaker-cta button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+}
+
+.speaker-cta button.ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: inherit;
+}
+
+.speaker-cta button :deep(.editable) {
+  color: inherit;
+}
+
+.speaker-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.speaker-stats article {
+  min-width: 120px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.speaker-stats strong {
+  font-size: 1.4rem;
+  display: block;
+}
+
+.speaker-avatar {
+  width: 260px;
+  flex-shrink: 0;
+  text-align: center;
+  cursor: pointer;
+}
+
+.speaker-avatar img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 999px;
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.35);
+}
+
+.speaker-avatar.shape-square img {
+  border-radius: 32px;
+}
+
+.aurora-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.aurora-card {
+  border-radius: 28px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aurora-card .eyebrow :deep(.editable) {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.aurora-badge {
+  align-self: flex-start;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.aurora-cta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aurora-cta button {
+  border-radius: 999px;
+  border: none;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aurora-cta button.ghost {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+}
+
+.aurora-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.aurora-stats article {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 12px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.aurora-media {
+  border-radius: 32px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 25px 55px rgba(15, 23, 42, 0.35);
+}
+
+.aurora-media.shape-circle {
+  border-radius: 999px;
+}
+
+.aurora-media img {
+  width: 100%;
+  display: block;
+  height: auto;
+}
+
+.aurora-media button {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+  cursor: pointer;
+}
+</style>

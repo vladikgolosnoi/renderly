@@ -338,8 +338,8 @@ function open(id: number) {
 }
 
 .hero-actions .primary {
-  background: #fefefe;
-  color: #312e81;
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+  color: #fff;
   padding: 12px 18px;
   border-radius: 999px;
   border: none;
@@ -352,7 +352,7 @@ function open(id: number) {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.6);
   background: transparent;
-  color: white;
+  color: #fff;
   padding: 12px 18px;
   cursor: pointer;
 }
@@ -396,8 +396,8 @@ function open(id: number) {
   width: 220px;
   height: 140px;
   border-radius: 20px;
-  background: white;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  background: var(--panel-surface);
+  box-shadow: var(--panel-shadow);
 }
 
 .hero-illustration .card.mock {
@@ -412,10 +412,11 @@ function open(id: number) {
 }
 
 .quick-start {
-  background: white;
+  background: var(--panel-surface);
+  border: 1px solid var(--divider-color);
   padding: 24px;
   border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--panel-shadow);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -432,13 +433,13 @@ function open(id: number) {
 }
 
 .preset-grid article {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   border-radius: 18px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: linear-gradient(135deg, #f8fbff, #fefefe);
+  background: linear-gradient(135deg, var(--panel-surface), var(--panel-soft));
 }
 
 .preset-grid h4 {
@@ -447,18 +448,20 @@ function open(id: number) {
 
 button.secondary {
   border: none;
-  background: #2563eb;
-  color: white;
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+  color: #fff;
   padding: 10px 16px;
   border-radius: 12px;
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.2);
 }
 
 .projects {
-  background: white;
+  background: var(--panel-surface);
+  border: 1px solid var(--divider-color);
   padding: 24px;
   border-radius: 24px;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--panel-shadow);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -482,10 +485,10 @@ button.secondary {
 }
 
 .projects .cards article {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   border-radius: 18px;
   padding: 18px;
-  background: #f8fbff;
+  background: var(--panel-soft);
   cursor: pointer;
   min-height: 180px;
   display: flex;
@@ -496,7 +499,7 @@ button.secondary {
 
 .projects .cards article:hover {
   transform: translateY(-4px);
-  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--panel-shadow);
 }
 
 .badge {
@@ -506,8 +509,8 @@ button.secondary {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: #e0e7ff;
-  color: #312e81;
+  background: var(--accent-muted);
+  color: var(--accent);
 }
 
 .badge.published {
@@ -525,20 +528,20 @@ button.secondary {
   justify-content: space-between;
   align-items: center;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .projects footer .link {
-  color: #2563eb;
+  color: var(--accent);
   font-weight: 600;
 }
 
 .empty {
-  border: 1px dashed #cbd5f5;
+  border: 1px dashed var(--divider-color);
   border-radius: 18px;
   padding: 24px;
   text-align: center;
   grid-column: 1 / -1;
-  background: #f8fbff;
+  background: var(--panel-soft);
 }
 </style>

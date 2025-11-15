@@ -41,7 +41,7 @@
         <template v-if="field.type !== 'list'">
           <div class="control-row">
             <textarea
-              v-if="field.type === 'richtext'"
+              v-if="field.type === 'richtext' || field.type === 'textarea'"
               v-model="local[field.key]"
               rows="3"
               placeholder="Введите текст"
@@ -96,7 +96,7 @@
                     <span>{{ getFieldLabel(subField) }}</span>
                     <div class="control-row">
                       <textarea
-                        v-if="subField.type === 'richtext'"
+                        v-if="subField.type === 'richtext' || subField.type === 'textarea'"
                         v-model="listValue(field.key)[index][subField.key]"
                         rows="2"
                         placeholder="Введите текст"
@@ -458,15 +458,16 @@ function fieldUploadError(path: (string | number)[]) {
 
 <style scoped>
 .panel {
-  background: #fff;
+  background: var(--panel-surface);
   border-radius: 24px;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-shadow: var(--panel-shadow);
 }
 
 .panel-head {
@@ -480,7 +481,7 @@ function fieldUploadError(path: (string | number)[]) {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .panel-head h3 {
@@ -490,25 +491,26 @@ function fieldUploadError(path: (string | number)[]) {
 
 .locale-chip {
   border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3;
+  background: var(--accent-muted);
+  color: var(--accent);
   padding: 4px 10px;
   font-size: 0.75rem;
 }
 
 .variation-panel {
-  border: 1px dashed #cbd5f5;
+  border: 1px dashed var(--divider-color);
   border-radius: 16px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background: var(--panel-soft);
 }
 
 .variation-title {
   margin: 0;
   font-size: 0.85rem;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .variation-list {
@@ -518,10 +520,10 @@ function fieldUploadError(path: (string | number)[]) {
 }
 
 .variation-chip {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--divider-color);
   border-radius: 12px;
   padding: 6px 10px;
-  background: #f8fafc;
+  background: var(--panel-surface);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -536,7 +538,7 @@ function fieldUploadError(path: (string | number)[]) {
 
 .variation-chip small {
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 form {
@@ -549,9 +551,10 @@ form {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   border-radius: 18px;
   padding: 14px;
+  background: var(--panel-soft);
 }
 
 .field-block header {
@@ -568,14 +571,14 @@ form {
 
 .field-block header small {
   display: block;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
 .badge {
   font-size: 0.7rem;
-  color: #047857;
-  background: #d1fae5;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.16);
   border-radius: 999px;
   padding: 2px 8px;
 }
@@ -595,12 +598,14 @@ form {
 input,
 textarea {
   border-radius: 12px;
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--input-border);
   padding: 8px 12px;
   font-size: 1rem;
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
+  background: var(--input-bg);
+  color: var(--input-text);
 }
 
 .list-panel {
@@ -612,7 +617,7 @@ textarea {
 .helper {
   margin: 0;
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .list-items {
@@ -622,12 +627,13 @@ textarea {
 }
 
 .list-items article {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   border-radius: 16px;
   padding: 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  background: var(--panel-surface);
 }
 
 .list-items article header {
@@ -639,7 +645,7 @@ textarea {
 .list-empty {
   margin: 0;
   font-size: 0.85rem;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .add-item {
@@ -648,9 +654,9 @@ textarea {
 
 .ghost {
   border-radius: 12px;
-  border: 1px solid #2563eb;
+  border: 1px solid var(--accent);
   background: transparent;
-  color: #2563eb;
+  color: var(--accent);
   padding: 6px 12px;
   cursor: pointer;
   flex-shrink: 0;
@@ -662,12 +668,13 @@ textarea {
 }
 
 .style-panel {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--divider-color);
   border-radius: 18px;
   padding: 14px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
+  background: var(--panel-soft);
 }
 
 .style-panel h4 {
@@ -680,15 +687,16 @@ textarea {
   padding: 10px 16px;
   border-radius: 16px;
   border: none;
-  background: linear-gradient(120deg, #2563eb, #7c3aed);
+  background: linear-gradient(120deg, var(--accent), var(--accent-strong));
   color: #fff;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
 }
 
 .empty {
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .sr-only {

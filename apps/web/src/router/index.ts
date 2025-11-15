@@ -7,7 +7,6 @@ import ProjectSettingsView from "@/views/ProjectSettings.vue";
 import AnalyticsView from "@/views/AnalyticsView.vue";
 import MarketplaceView from "@/views/MarketplaceView.vue";
 import ShareView from "@/views/ShareView.vue";
-
 const router = createRouter({
   history: createWebHistory(),
   routes: [

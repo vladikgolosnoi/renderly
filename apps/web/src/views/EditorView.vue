@@ -780,8 +780,9 @@ provide("openAssetPreview", openAssetPreview);
   gap: 24px;
   padding: 32px;
   border-radius: 32px;
-  background: linear-gradient(135deg, #eef2ff, #e0f2fe);
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
+  background: linear-gradient(135deg, var(--panel-surface), var(--panel-soft));
+  border: 1px solid var(--divider-color);
+  box-shadow: var(--panel-shadow);
   align-items: center;
 }
 
@@ -799,15 +800,17 @@ provide("openAssetPreview", openAssetPreview);
 
 .subtitle {
   margin: 0;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .status-chip {
   padding: 4px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(37, 99, 235, 0.3);
+  border: 1px solid var(--divider-color);
   font-size: 0.85rem;
   text-transform: lowercase;
+  color: var(--text-secondary);
+  background: var(--panel-soft);
 }
 
 .status-chip.ready {
@@ -817,9 +820,9 @@ provide("openAssetPreview", openAssetPreview);
 }
 
 .status-chip.subtle {
-  border-color: rgba(99, 102, 241, 0.2);
-  color: #4338ca;
-  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--accent);
+  background: var(--accent-muted);
 }
 
 .hero-metrics {
@@ -830,19 +833,19 @@ provide("openAssetPreview", openAssetPreview);
 }
 
 .hero-metrics article {
-  background: #fff;
+  background: var(--panel-surface);
   border-radius: 18px;
   padding: 16px;
   text-align: center;
   min-width: 120px;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+  box-shadow: inset 0 0 0 1px var(--divider-color);
 }
 
 .hero-metrics strong {
   display: block;
   font-size: 1.8rem;
   margin-top: 6px;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .action-cluster {
@@ -856,22 +859,22 @@ provide("openAssetPreview", openAssetPreview);
   margin-top: 8px;
   text-align: right;
   font-size: 0.95rem;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .publish-hint strong {
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .primary {
   border: none;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(125deg, var(--accent), var(--accent-strong));
   color: #fff;
   padding: 12px 20px;
   border-radius: 16px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 18px 40px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
 }
 
 .primary:disabled {
@@ -881,9 +884,9 @@ provide("openAssetPreview", openAssetPreview);
 
 .ghost {
   border-radius: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.6);
+  border: 1px solid var(--divider-color);
   background: transparent;
-  color: #312e81;
+  color: var(--text-primary);
   padding: 10px 16px;
   font-weight: 500;
   cursor: pointer;
@@ -897,7 +900,7 @@ provide("openAssetPreview", openAssetPreview);
 
 .text-only {
   border-color: transparent;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .utility-row {
@@ -908,11 +911,11 @@ provide("openAssetPreview", openAssetPreview);
 }
 
 .panel-card {
-  background: #fff;
+  background: var(--panel-surface);
   border-radius: 28px;
   padding: 20px;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: var(--panel-shadow);
+  border: 1px solid var(--divider-color);
 }
 
 .panel-card__header {
@@ -930,7 +933,7 @@ provide("openAssetPreview", openAssetPreview);
 
 .panel-subtitle {
   margin: 4px 0 0;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -985,19 +988,19 @@ provide("openAssetPreview", openAssetPreview);
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #fff;
+  background: var(--panel-surface);
   border-radius: 32px;
   padding: 16px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--divider-color);
+  box-shadow: var(--panel-shadow);
 }
 
 .inspector-section {
   border-radius: 24px;
-  background: #fff;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: var(--panel-soft);
+  border: 1px solid var(--divider-color);
   padding: 16px 18px;
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--panel-shadow);
   overflow: hidden;
 }
 
@@ -1021,7 +1024,7 @@ provide("openAssetPreview", openAssetPreview);
 }
 
 .inspector-title small {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -1029,7 +1032,8 @@ provide("openAssetPreview", openAssetPreview);
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #eef2ff;
+  background: var(--accent-muted);
+  color: var(--accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
