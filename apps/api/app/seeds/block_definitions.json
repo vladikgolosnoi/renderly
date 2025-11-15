@@ -1,0 +1,695 @@
+[
+  {
+    "key": "hero",
+    "name": "Hero Section",
+    "category": "content",
+    "description": "Первый экран с крупным обещанием, призывом и иллюстрацией.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "eyebrow",
+        "label": "Eyebrow",
+        "type": "text",
+        "default": "Факультет"
+      },
+      {
+        "key": "headline",
+        "label": "Headline",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "subheading",
+        "label": "Subheading",
+        "type": "text"
+      },
+      {
+        "key": "cta_label",
+        "label": "CTA Label",
+        "type": "text"
+      },
+      {
+        "key": "cta_url",
+        "label": "CTA Link",
+        "type": "text"
+      },
+      {
+        "key": "image_url",
+        "label": "Изображение",
+        "type": "text",
+        "widget": "asset"
+      }
+    ],
+    "default_config": {
+      "eyebrow": "Факультет",
+      "headline": "Создайте лендинг за день",
+      "subheading": "Drag & Drop редактор, шаблоны и публикация в один клик.",
+      "cta_label": "Попробовать",
+      "cta_url": "#lead-form",
+      "image_url": "https://placehold.co/720x520"
+    },
+    "ui_meta": {
+      "tags": [
+        "hero",
+        "landing"
+      ],
+      "variations": [
+        {
+          "slug": "hero-split",
+          "name": "Сплит с иллюстрацией",
+          "description": "Текстовый столбец слева, визуал справа — классика для продуктовых лендингов.",
+          "badges": [
+            "Hero",
+            "B2B"
+          ],
+          "config": {
+            "eyebrow": "Платформа №1",
+            "headline": "Запустите сайт за вечер",
+            "subheading": "Готовые блоки, темы и автопубликация на ваш домен.",
+            "cta_label": "Создать проект",
+            "cta_url": "#create",
+            "image_url": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100'><rect width='160' height='100' rx='14' fill='%23f5f3ff'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' font-family='Inter,Arial,sans-serif' fill='%238181f5'>preview</text></svg>"
+          }
+        },
+        {
+          "slug": "hero-centered",
+          "name": "Центрированный",
+          "description": "Подходит для коротких промо или Taplink-подобных страничек.",
+          "badges": [
+            "Hero",
+            "Promo"
+          ],
+          "config": {
+            "eyebrow": "Стартуйте проще",
+            "headline": "Современный сайт без разработчиков",
+            "subheading": "Соберите разделы drag&drop, подключите домен и платежи.",
+            "cta_label": "Попробовать",
+            "cta_url": "#try",
+            "image_url": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100'><rect width='160' height='100' rx='14' fill='%23f5f3ff'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' font-family='Inter,Arial,sans-serif' fill='%238181f5'>preview</text></svg>"
+          }
+        },
+        {
+          "slug": "hero-logos",
+          "name": "С логотипами",
+          "description": "Hero с социальной доказательностью для агентств и стартапов.",
+          "badges": [
+            "Hero",
+            "Trust"
+          ],
+          "config": {
+            "eyebrow": "Нам доверяют",
+            "headline": "25+ компаний уже на Renderly",
+            "subheading": "Конструктор, который масштабируется вместе с задачами.",
+            "cta_label": "Посмотреть демо",
+            "cta_url": "#demo",
+            "image_url": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100'><rect width='160' height='100' rx='14' fill='%23f5f3ff'/><text x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' font-family='Inter,Arial,sans-serif' fill='%238181f5'>preview</text></svg>"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "key": "feature-grid",
+    "name": "Feature Grid",
+    "category": "content",
+    "description": "Карта преимуществ или образовательных программ в виде карточек.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "features",
+        "label": "Features",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "title",
+            "label": "Заголовок",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "description",
+            "label": "Описание",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "title": "Почему Renderly",
+      "features": [
+        {
+          "title": "Drag & drop",
+          "description": "Добавляйте блоки без кода."
+        },
+        {
+          "title": "Темы",
+          "description": "Настройте бренд за минуту."
+        },
+        {
+          "title": "CDN",
+          "description": "Публикация в один клик."
+        }
+      ]
+    },
+    "ui_meta": {
+      "tags": [
+        "features",
+        "sections"
+      ],
+      "variations": [
+        {
+          "slug": "features-icons",
+          "name": "Иконки",
+          "description": "Три ключевых преимущества с короткими текстами.",
+          "config": {
+            "title": "Что получаете",
+            "features": [
+              {
+                "title": "Контент-блоки",
+                "description": "Hero, сетки, формы и медиагалереи."
+              },
+              {
+                "title": "Темы",
+                "description": "Готовые цветовые схемы и типографика."
+              },
+              {
+                "title": "CDN",
+                "description": "Автопубликация и мгновенный предпросмотр."
+              }
+            ]
+          }
+        },
+        {
+          "slug": "features-steps",
+          "name": "Шаги",
+          "description": "Инструкция в четыре шага — идеально для onboarding.",
+          "config": {
+            "title": "Как это работает",
+            "features": [
+              {
+                "title": "1. Выберите шаблон",
+                "description": "Готовые наборы блоков для любой ниши."
+              },
+              {
+                "title": "2. Настройте",
+                "description": "Редактируйте текст, цвета и ассеты в реальном времени."
+              },
+              {
+                "title": "3. Подключите формы",
+                "description": "Webhook-и или почта, чтобы ловить заявки."
+              },
+              {
+                "title": "4. Опубликуйте",
+                "description": "Запуск в CDN или на собственном домене."
+              }
+            ]
+          }
+        },
+        {
+          "slug": "features-metrics",
+          "name": "Метрики",
+          "description": "Цифры + подписи — отлично для раздела \"почему мы\".",
+          "config": {
+            "title": "Цифры Renderly",
+            "features": [
+              {
+                "title": "7 минут",
+                "description": "Среднее время сборки страницы."
+              },
+              {
+                "title": "120+",
+                "description": "Готовых блоков и пресетов."
+              },
+              {
+                "title": "99,9%",
+                "description": "Аптайм CDN и кастомных доменов."
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "key": "media-gallery",
+    "name": "Media Gallery",
+    "category": "media",
+    "description": "Коллекция фото или кадров с мероприятий.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "images",
+        "label": "Images",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "url",
+            "label": "URL",
+            "type": "text",
+            "widget": "asset",
+            "required": true
+          },
+          {
+            "key": "alt",
+            "label": "ALT",
+            "type": "text"
+          },
+          {
+            "key": "caption",
+            "label": "Подпись",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "images": [
+        {
+          "url": "https://placehold.co/420x260",
+          "alt": "Кампус",
+          "caption": "Инфраструктура"
+        },
+        {
+          "url": "https://placehold.co/420x260",
+          "alt": "Лекция",
+          "caption": "Практика"
+        }
+      ]
+    }
+  },
+  {
+    "key": "cta",
+    "name": "Call to action",
+    "category": "content",
+    "description": "Финальный блок с призывом к действию.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text"
+      },
+      {
+        "key": "action_label",
+        "label": "Action label",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "action_url",
+        "label": "Action url",
+        "type": "text",
+        "required": true
+      }
+    ],
+    "default_config": {
+      "title": "Готовы запустить приём заявок?",
+      "description": "Поможем подключить формы, аналитику и домены.",
+      "action_label": "Получить доступ",
+      "action_url": "https://renderly.dev/demo"
+    }
+  },
+  {
+    "key": "form",
+    "name": "Lead Form",
+    "category": "form",
+    "description": "Форма заявки с вебхуком и сообщением об успехе.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "description",
+        "label": "Description",
+        "type": "text"
+      },
+      {
+        "key": "fields",
+        "label": "Fields",
+        "type": "list",
+        "required": true
+      },
+      {
+        "key": "webhook_url",
+        "label": "Webhook URL",
+        "type": "text"
+      },
+      {
+        "key": "success_message",
+        "label": "Success message",
+        "type": "text"
+      }
+    ],
+    "default_config": {
+      "title": "Оставьте контакты",
+      "description": "Пришлём программу и консультацию.",
+      "fields": [
+        "Имя",
+        "Email",
+        "Телефон"
+      ],
+      "webhook_url": "https://hooks.renderly.dev/leads",
+      "success_message": "Спасибо! Мы свяжемся в течение дня."
+    },
+    "ui_meta": {
+      "tags": [
+        "forms",
+        "leads"
+      ],
+      "variations": [
+        {
+          "slug": "form-callback",
+          "name": "Обратный звонок",
+          "description": "Минимальная форма для лидов: имя + телефон.",
+          "config": {
+            "title": "Оставьте контакты",
+            "description": "Перезвоним в течение 15 минут.",
+            "fields": [
+              "Имя",
+              "Телефон",
+              "Удобное время"
+            ],
+            "webhook_url": "https://hooks.renderly.dev/callback",
+            "success_message": "Спасибо! Мы на связи."
+          }
+        },
+        {
+          "slug": "form-booking",
+          "name": "Запись",
+          "description": "Запрос консультации или демонстрации продукта.",
+          "config": {
+            "title": "Забронировать демонстрацию",
+            "description": "Укажите дату и мы отправим приглашение.",
+            "fields": [
+              "Имя",
+              "Компания",
+              "Email",
+              "Дата",
+              "Комментарий"
+            ],
+            "webhook_url": "https://hooks.renderly.dev/booking",
+            "success_message": "Готово! Мы подтвердим слот письмом."
+          }
+        },
+        {
+          "slug": "form-brief",
+          "name": "Короткий бриф",
+          "description": "Форма для агентств: собираем минимум информации.",
+          "config": {
+            "title": "Расскажите о задаче",
+            "description": "Так мы подготовим персональное предложение.",
+            "fields": [
+              "Компания",
+              "Сайт",
+              "Бюджет",
+              "Контакты",
+              "Комментарий"
+            ],
+            "webhook_url": "https://hooks.renderly.dev/brief",
+            "success_message": "Получили! Ответим в течение дня."
+          }
+        }
+      ]
+    }
+  },
+  {
+    "key": "price-list",
+    "name": "Price List",
+    "category": "content",
+    "description": "Тарифы или пакеты участия с преимуществами.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "plans",
+        "label": "Plans",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "name",
+            "label": "Название",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "price",
+            "label": "Цена",
+            "type": "text"
+          },
+          {
+            "key": "features",
+            "label": "Преимущества",
+            "type": "list"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "title": "Пакеты участия",
+      "plans": [
+        {
+          "name": "Базовый",
+          "price": "Бесплатно",
+          "features": [
+            "3 секции",
+            "Чат участников"
+          ]
+        },
+        {
+          "name": "Премиум",
+          "price": "29 000 ₽",
+          "features": [
+            "15 секций",
+            "Личный куратор"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "key": "schedule",
+    "name": "Schedule",
+    "category": "content",
+    "description": "Сетка программы дня или расписание выступлений.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "items",
+        "label": "Items",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "time",
+            "label": "Время",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "topic",
+            "label": "Тема",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "speaker",
+            "label": "Спикер",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "title": "Программа дня",
+      "items": [
+        {
+          "time": "10:00",
+          "topic": "Регистрация и кофе",
+          "speaker": "Координаторы"
+        },
+        {
+          "time": "11:00",
+          "topic": "Лекция о no-code",
+          "speaker": "Renderly"
+        }
+      ]
+    }
+  },
+  {
+    "key": "team",
+    "name": "Team Grid",
+    "category": "content",
+    "description": "Команда проекта с фото и ролями.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "key": "members",
+        "label": "Members",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "name",
+            "label": "Имя",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "role",
+            "label": "Роль",
+            "type": "text"
+          },
+          {
+            "key": "photo",
+            "label": "Фото",
+            "type": "text",
+            "widget": "asset"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "title": "Команда программы",
+      "members": [
+        {
+          "name": "Анна Ковалёва",
+          "role": "Академический директор",
+          "photo": "https://placehold.co/200x200"
+        },
+        {
+          "name": "Роман Иванов",
+          "role": "Методолог",
+          "photo": "https://placehold.co/200x200"
+        }
+      ]
+    }
+  },
+  {
+    "key": "testimonials",
+    "name": "Testimonials",
+    "category": "content",
+    "description": "Отзывы студентов, партнёров или клиентов.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text"
+      },
+      {
+        "key": "testimonials",
+        "label": "Testimonials",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "name",
+            "label": "Имя",
+            "type": "text"
+          },
+          {
+            "key": "quote",
+            "label": "Отзыв",
+            "type": "text",
+            "widget": "richtext"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "title": "Отзывы участников",
+      "testimonials": [
+        {
+          "name": "Мария",
+          "quote": "Быстро собрали лендинг и запустили приём заявок."
+        },
+        {
+          "name": "Алекс",
+          "quote": "Редактор понятен команде без разработчиков."
+        }
+      ]
+    }
+  },
+  {
+    "key": "faq",
+    "name": "FAQ",
+    "category": "content",
+    "description": "Ответы на типовые вопросы абитуриентов или заказчиков.",
+    "version": "1.0.0",
+    "schema": [
+      {
+        "key": "title",
+        "label": "Title",
+        "type": "text"
+      },
+      {
+        "key": "items",
+        "label": "Questions",
+        "type": "list",
+        "required": true,
+        "item_schema": [
+          {
+            "key": "question",
+            "label": "Вопрос",
+            "type": "text",
+            "required": true
+          },
+          {
+            "key": "answer",
+            "label": "Ответ",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "default_config": {
+      "title": "Частые вопросы",
+      "items": [
+        {
+          "question": "Сколько длится обучение?",
+          "answer": "Программа занимает 12 недель."
+        },
+        {
+          "question": "Нужен ли опыт в разработке?",
+          "answer": "Нет, всё строится на no-code инструментах."
+        }
+      ]
+    }
+  }
+]

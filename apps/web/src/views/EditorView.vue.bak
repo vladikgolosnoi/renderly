@@ -1,0 +1,421 @@
+<template>
+  <section v-if="project">
+    <header class="editor-header">
+      <div>
+        <h2>{{ project.title }}</h2>
+        <small>{{ project.blocks.length }} блоков</small>
+      </div>
+      <div class="actions">
+        <button class="ghost" v-if="project" @click="openSettings(project.id)">Настройки проекта</button>
+        <button class="ghost" :disabled="!store.canUndo" @click="undo">Отменить</button>
+        <button class="ghost" :disabled="!store.canRedo" @click="redo">Повторить</button>
+        <button @click="publish">Опубликовать</button>
+        <button class="ghost" @click="router.push('/')">Выйти</button>
+      </div>
+    </header>
+
+    <LocaleSwitcher
+      class="locale-section"
+      :locales="store.locales"
+      :default-locale="store.defaultLocale"
+      :active-locale="store.activeLocale"
+      @change-locale="store.setActiveLocale"
+      @add-locale="addLocale"
+      @set-default="setDefaultLocale"
+      @remove-locale="removeLocale"
+    />
+
+    <EditorTourCard class="tour-anchor" />
+
+    <div class="editor-grid">
+      <div class="left-panel">
+        <BlockPalette :blocks="store.blockCatalog" @add="store.addBlock" />
+        <EditorHints v-if="onboarding.showEditorHints" @close="onboarding.dismissEditorHints()" />
+      </div>
+      <EditorCanvas
+        :blocks="project.blocks"
+        :catalog="store.blockCatalog"
+        :active-locale="store.activeLocale"
+        :default-locale="store.defaultLocale"
+        @select="selectBlock"
+        @reorder="handleReorder"
+        @insert="insertBlock"
+        @inline-edit="handleInlineEdit"
+        @request-asset="handleAssetRequest"
+      />
+      <div class="side-panel">
+        <BlockForm
+          :block="selectedBlock"
+          :catalog="store.blockCatalog"
+          :locale="store.activeLocale"
+          :default-locale="store.defaultLocale"
+          @save="saveBlock"
+          @request-asset="handleAssetRequest"
+        />
+        <ThemeDesigner
+          :theme="project.theme ?? {}"
+          :templates="store.themeTemplates"
+          @change="updateTheme"
+          @save-template="saveTemplate"
+          @apply-template="applyTemplate"
+        />
+        <AssetManager :selecting-for="assetTargetLabel" @select="handleAssetSelect" />
+        <RevisionTimeline
+          :revisions="store.revisions"
+          :loading="store.revisionsLoading"
+          @restore="restoreRevision"
+          @refresh="refreshRevisions"
+        />
+      </div>
+    </div>
+
+    <LivePreview
+      :project-id="project.id"
+      :title="project.title"
+      :blocks="project.blocks"
+      :theme="project.theme"
+      :settings="project.settings"
+      :locale="store.activeLocale"
+      :default-locale="store.defaultLocale"
+    />
+
+    <PublishChecklist
+      v-if="showPublishChecklist && project"
+      :has-domain="hasVerifiedDomain"
+      :has-seo="hasSeo"
+      :has-blocks="hasBlocks"
+      :has-forms="hasForms"
+      :publishing="publishLoading"
+      @close="showPublishChecklist = false"
+      @publish="confirmPublish"
+    />
+  </section>
+  <p v-else>Загружаем редактор...</p>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import BlockPalette from "@/components/BlockPalette.vue";
+import EditorCanvas from "@/components/EditorCanvas.vue";
+import BlockForm from "@/components/BlockForm.vue";
+import ThemeDesigner from "@/components/ThemeDesigner.vue";
+import LivePreview from "@/components/LivePreview.vue";
+import LocaleSwitcher from "@/components/LocaleSwitcher.vue";
+import AssetManager from "@/components/AssetManager.vue";
+import RevisionTimeline from "@/components/RevisionTimeline.vue";
+import EditorTourCard from "@/components/EditorTourCard.vue";
+import EditorHints from "@/components/EditorHints.vue";
+import PublishChecklist from "@/components/PublishChecklist.vue";
+import { useProjectStore } from "@/stores/project";
+import { useOnboardingStore } from "@/stores/onboarding";
+import type { BlockInstance } from "@/types/blocks";
+
+type AssetTarget = {
+  blockId: number;
+  fieldKey: string;
+  label: string;
+  path: (string | number)[];
+};
+
+const route = useRoute();
+const router = useRouter();
+const store = useProjectStore();
+const onboarding = useOnboardingStore();
+const selectedId = ref<number | null>(null);
+
+const project = computed(() => store.current);
+const selectedBlock = computed(() =>
+  store.current?.blocks.find((block) => block.id === selectedId.value) ?? null
+);
+const showPublishChecklist = ref(false);
+const publishLoading = ref(false);
+const assetTarget = ref<AssetTarget | null>(null);
+const assetTargetLabel = computed(() => assetTarget.value?.label ?? null);
+
+const hasBlocks = computed(() => (project.value?.blocks.length ?? 0) > 0);
+const hasSeo = computed(() => {
+  const seo = (project.value?.settings as any)?.seo;
+  return Boolean(seo?.title && seo?.description);
+});
+const hasForms = computed(() => {
+  if (!project.value) return false;
+  return project.value.blocks.some((block) => {
+    if (block.definition_key !== "form") return false;
+    const config = block.config || {};
+    return Boolean((config as any).webhook_url || (config as any).fields?.length);
+  });
+});
+const hasVerifiedDomain = computed(() =>
+  store.domains.some((domain) => domain.status === "verified")
+);
+
+onMounted(async () => {
+  if (!store.blockCatalog.length) {
+    await store.loadCatalog();
+  }
+  if (!store.themeTemplates.length) {
+    await store.fetchThemeTemplates();
+  }
+  const id = Number(route.params.id);
+  if (id) {
+    await store.fetchProject(id);
+    onboarding.syncProjectDetail(store.current);
+    await store.fetchProjectLocales(id);
+    await store.fetchRevisions(id);
+    await store.fetchDomains(id);
+    onboarding.triggerEditorHints();
+  }
+});
+
+watch(
+  () => project.value,
+  (detail) => {
+    onboarding.syncProjectDetail(detail);
+  },
+  { deep: true }
+);
+
+watch(
+  () => selectedBlock.value?.id,
+  () => {
+    assetTarget.value = null;
+  }
+);
+
+watch(
+  () => store.activeLocale,
+  () => {
+    assetTarget.value = null;
+  }
+);
+
+function cloneDeep<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value ?? {}));
+}
+
+function applyValueAtPath(
+  source: Record<string, unknown> | undefined,
+  path: (string | number)[],
+  nextValue: unknown
+) {
+  const root: any = Array.isArray(source) ? [...source] : { ...(source ?? {}) };
+  let cursor = root;
+  for (let idx = 0; idx < path.length; idx += 1) {
+    const key = path[idx];
+    const isLast = idx === path.length - 1;
+    if (isLast) {
+      cursor[key as any] = nextValue;
+      break;
+    }
+    const nextKey = path[idx + 1];
+    const current = cursor[key as any];
+    if (Array.isArray(current)) {
+      cursor[key as any] = [...current];
+    } else if (current && typeof current === "object") {
+      cursor[key as any] = { ...current };
+    } else {
+      cursor[key as any] = typeof nextKey === "number" ? [] : {};
+    }
+    cursor = cursor[key as any];
+  }
+  return root;
+}
+
+function selectBlock(id: number) {
+  selectedId.value = id;
+}
+
+async function saveBlock(config: Record<string, unknown>) {
+  if (!selectedBlock.value) return;
+  await store.updateBlock(selectedBlock.value.id, config, store.activeLocale);
+}
+
+function handleReorder(payload: { from: number; to: number }) {
+  store.reorderBlocks(payload.from, payload.to);
+}
+
+function insertBlock(payload: { definitionKey: string; index: number }) {
+  store.addBlock(payload.definitionKey, payload.index);
+  onboarding.markBlockAdded();
+}
+
+function handleInlineEdit(payload: { blockId: number; fieldKey: string; value: string; path?: (string | number)[] }) {
+  if (!store.current) return;
+  const block = store.current.blocks.find((item) => item.id === payload.blockId);
+  if (!block) return;
+  const path = payload.path ?? [payload.fieldKey];
+  const nextConfig = applyValueAtPath(localizedConfig(block), path, payload.value);
+  store.updateBlock(payload.blockId, nextConfig, store.activeLocale);
+}
+
+function localizedConfig(block: BlockInstance) {
+  if (store.activeLocale === store.defaultLocale) {
+    return cloneDeep(block.config ?? {});
+  }
+  return cloneDeep(block.translations?.[store.activeLocale] ?? block.config ?? {});
+}
+
+function updateTheme(theme: Record<string, string>) {
+  store.updateTheme(theme);
+}
+
+async function publish() {
+  if (project.value) {
+    await store.fetchDomains(project.value.id);
+  }
+  showPublishChecklist.value = true;
+}
+
+async function confirmPublish() {
+  if (!hasBlocks.value || !hasSeo.value || !hasForms.value) {
+    return;
+  }
+  publishLoading.value = true;
+  try {
+    const publication = await store.publishCurrent(store.activeLocale);
+    const url = publication?.publication?.custom_domain_url ?? publication?.publication?.cdn_url;
+    const message = url
+      ? Сайт опубликован. URL: 
+      : "Публикация прошла, но ссылка не вернулась от CDN. Проверьте журнал логов.";
+    alert(message);
+    showPublishChecklist.value = false;
+  } finally {
+    publishLoading.value = false;
+  }
+}
+
+function undo() {
+  store.undo();
+}
+
+function redo() {
+  store.redo();
+}
+
+function saveTemplate(name: string) {
+  store.saveThemeTemplate(name);
+}
+
+function applyTemplate(palette: Record<string, string>) {
+  store.updateTheme(palette);
+}
+
+function openSettings(projectId: number) {
+  router.push(/projects//settings);
+}
+
+async function addLocale(code: string) {
+  await store.addLocale(code);
+}
+
+async function setDefaultLocale(locale: string) {
+  await store.setDefaultLocale(locale);
+}
+
+async function removeLocale(locale: string) {
+  await store.removeLocale(locale);
+}
+
+async function restoreRevision(revisionId: number) {
+  await store.restoreRevision(revisionId);
+}
+
+async function refreshRevisions() {
+  if (project.value) {
+    await store.fetchRevisions(project.value.id);
+  }
+}
+
+function handleAssetRequest(payload: { blockId: number; fieldKey: string; label: string; path?: (string | number)[] }) {
+  assetTarget.value = {
+    blockId: payload.blockId,
+    fieldKey: payload.fieldKey,
+    label: payload.label,
+    path: payload.path ?? [payload.fieldKey]
+  };
+  document.getElementById("asset-manager")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function handleAssetSelect(url: string) {
+  if (!assetTarget.value || !store.current) return;
+  const block = store.current.blocks.find((item) => item.id === assetTarget.value?.blockId);
+  if (!block) {
+    assetTarget.value = null;
+    return;
+  }
+  const nextConfig = applyValueAtPath(localizedConfig(block), assetTarget.value.path, url);
+  await store.updateBlock(assetTarget.value.blockId, nextConfig, store.activeLocale);
+  assetTarget.value = null;
+}
+</script>
+
+<style scoped>
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+button {
+  border-radius: 12px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ghost {
+  background: transparent;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.locale-section {
+  margin-bottom: 16px;
+}
+
+.tour-anchor {
+  margin: 0 0 16px;
+  max-width: 320px;
+}
+
+@media (min-width: 1024px) {
+  .tour-anchor {
+    margin-left: auto;
+  }
+}
+</style>
+
