@@ -5,9 +5,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app \
     RUN_DB_MIGRATIONS=1
 
+ARG DEBIAN_MIRROR="http://deb.debian.org/debian"
+ARG DEBIAN_SECURITY_MIRROR="http://security.debian.org/debian-security"
+ENV DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    sed -Ei "s|http://deb.debian.org/debian|${DEBIAN_MIRROR}|g" /etc/apt/sources.list; \
+    sed -Ei "s|http://security.debian.org/debian-security|${DEBIAN_SECURITY_MIRROR}|g" /etc/apt/sources.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends build-essential; \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt

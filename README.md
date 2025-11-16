@@ -70,6 +70,7 @@ docker compose exec api python -m app.seeds.seed_data
 - Если во время `docker compose up` появилось `container <project>-db-1 ... exited with code 1`, выполните `docker compose down -v` и повторите запуск — так база пересоберётся и миграции пройдут начисто.
 - Если `renderly-redis-1` не стартует с ошибкой `port is already allocated`, на машине уже запущен Redis на 6379 — остановите его либо поменяйте порт в `.env` (`REDIS_PORT` + `REDIS_URL`).
 - Если `api` падает на старте с `exec ./entrypoint.sh: no such file or directory`, обновите репозиторий, убедитесь, что `.gitattributes` подтянулся, и переустановите окончание строк: `git checkout -- apps/api/entrypoint.sh` (на Windows также проверьте `git config core.autocrlf false` перед клоном).
+- Если сборка `api`/`worker` в Docker зависает на `apt-get update`, укажите зеркала Debian: задайте `DEBIAN_MIRROR` и `DEBIAN_SECURITY_MIRROR` в `.env`/`infra/.env` (например, `http://mirror.yandex.ru/debian`) и повторите `docker compose up -d --build`.
 - API: http://localhost:8000/api/docs  
 - Web‑клиент: http://localhost:5173  
 - Health‑check: `GET http://localhost:8000/api/healthz`
