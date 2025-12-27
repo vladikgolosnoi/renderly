@@ -1,29 +1,29 @@
-# Renderly — no‑code студия лендингов для EdTech и SMB
+# Renderly — no-code студия лендингов для EdTech и SMB
 
 [![tests](https://github.com/your-org/renderly/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/renderly/actions/workflows/ci.yml)
 
-Renderly — это полнофункциональный конструктор одностраничных сайтов. В проекте объединены drag‑and‑drop редактор на Vue 3 + Pinia, API на FastAPI/SQLAlchemy, очередь фоновых заданий на Redis/RQ, файловое хранилище MinIO и edge‑прокси для кастомных доменов. Из коробки поддержаны пресеты блоков, общий предпросмотр, аналитика лидов, публикация на поддоменах и собственных доменах, а также каталог шаблонов для маркетплейса.
+Соберите и опубликуйте лендинг за минуты: drag-and-drop редактор на Vue 3, API на FastAPI, фоновые задачи на Redis/RQ, MinIO для ассетов и edge-прокси для кастомных доменов — всё в одном репозитории.
 
-## Ключевые возможности
+- 🚀 Публикация за 5 минут: пресеты блоков, темы, предпросмотр, мгновенный деплой.
+- 🧠 Умный редактор: hero/feature/form, локализации, аналитика лидов.
+- 🔗 Команда: роли, share-links с комментариями, аудит действий.
+- 🌐 Кастомные домены: верификация CNAME, edge-прокси, CDN снапшоты в MinIO.
+- 🛠 Готовая инфраструктура: Docker Compose, Nginx, Domain Manager, Makefile.
 
-- **Редактор с живым предпросмотром**: `EditorView.vue`, `BlockPalette.vue`, `LivePreview.vue` и `BlockForm.vue` позволяют собирать страницу из готовых блоков hero/feature/grid/form, конфигурировать контент и переводы и моментально видеть результат.
-- **Дизайнер тем**: `ThemeDesigner.vue` и API `/api/themes` позволяют менять типографику, цвета, spacing, сохранять пресеты и применять их к целым проектам.
-- **Шеринг и совместная работа**: приватные/общие/публичные проекты, share‑links (`/api/projects/{id}/share-links`) с комментариями, аудит действий (`app/services/audit.py`) и ролевая модель (viewer/editor/owner).
-- **Публикация и кастомные домены**: HTML собирается `services/publisher.py`, кладётся в MinIO и автоматически доступен на поддоменах `*.sites.<root>` или после верификации CNAME через сервис `apps/domain-manager`.
-- **Формы и аналитика**: блок `form` отправляет данные на `/api/forms/submit`, submissions обрабатываются worker’ом (`services/forms.py`), а `/api/analytics/leads` и `AnalyticsView.vue` показывают конверсии и временные ряды.
-- **Каталог шаблонов**: marketplace (`MarketplaceView.vue`, `/api/templates`) хранит снапшоты проектов, позволяет импортировать/публиковать шаблоны для команды.
-- **Менеджер ассетов**: `assets.py` выдаёт presigned URL’ы, проверяет лимиты, генерирует thumbnail и отдаёт публичные ссылки через MinIO.
-
-Подробное описание фич с указанием файлов см. в [`FEATURES.md`](FEATURES.md).
+## Быстрые ссылки
+- Web: http://localhost:5173
+- API: http://localhost:8000/api/docs
+- Proxy: http://localhost:8088
+- Domain Manager: http://localhost:8085
+- MinIO: http://localhost:9000 (console 9001)
+- Health: `GET http://localhost:8000/api/healthz`
 
 ## Технологический стек
-
-- **Backend**: Python 3.11, FastAPI, SQLAlchemy 2, Alembic, Postgres 16, Redis + RQ, MinIO SDK, Pydantic v2, JWT авторизация.
-- **Frontend**: Vue 3 + `<script setup>`, Pinia, Vue Router, TypeScript, Vite, Vitest + Vue Test Utils, ESLint.
-- **Инфраструктура**: Docker Compose, Nginx edge‑прокси, Certbot/Let’s Encrypt, отдельный Domain Manager (FastAPI + dnspython), bash‑скрипты и Makefile.
+- **Backend**: Python 3.11, FastAPI, SQLAlchemy 2, Alembic, Postgres 16, Redis + RQ, MinIO, Pydantic v2, JWT.
+- **Frontend**: Vue 3 + `<script setup>`, Pinia, Vue Router, TypeScript, Vite, Vitest, ESLint.
+- **Инфраструктура**: Docker Compose, Nginx edge-прокси, Certbot/Let's Encrypt, Domain Manager (FastAPI + dnspython), Makefile.
 
 ## Архитектура на ладони
-
 ```
 [Vue SPA] --axios--> [FastAPI API] --SQLAlchemy--> [PostgreSQL]
    |                        | \
@@ -32,51 +32,36 @@ Renderly — это полнофункциональный конструкто�
    |                        |  +-> [Domain Manager -> DNS]
    +--> Theme/Block stores  +--> Publisher -> HTML snapshot
 ```
+Подробнее — в [`ARCHITECTURE.md`](ARCHITECTURE.md) и [`FEATURES.md`](FEATURES.md).
 
-Подробные диаграммы, модели данных и описание сервисов — в [`ARCHITECTURE.md`](ARCHITECTURE.md).
+## Быстрый запуск через Docker (проверено)
+**Зависимости**
+- Docker Engine + Compose plugin. macOS без Docker Desktop: `brew install docker docker-compose colima` и добавьте в `~/.docker/config.json`:
+  ```json
+  { "cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"] }
+  ```
+- Colima как runtime: `colima start --cpu 4 --memory 8 --disk 60` (подстройте под машину).
 
-## Структура репозитория
-
-```
-apps/
-  api/             # FastAPI приложение, модели, сервисы, worker
-  web/             # Vue 3 SPA, Pinia stores, Vitest
-  domain-manager/  # микросервис проверки CNAME
-infra/
-  docker-compose.yml, env.* и конфиги Nginx
-scripts/
-  deploy.sh        # production-скрипт обновления
-Makefile           # быстрые команды lint/test/compose
-```
-
-## Быстрый старт разработчика
-
-### 1. Локальный запуск через Docker Compose
-
+**Шаги**
 ```bash
 cp .env.example .env
-# docker compose читает переменные из infra/.env — скопируйте туда тот же файл
 cp .env infra/.env
 cd infra
-# (опционально) если разворачивали проект ранее и хотите чистый старт
-# docker compose down -v
 docker compose up -d --build
-# дождитесь статуса Up у сервиса api (docker compose ps)
+# дождитесь Up у api: docker compose ps
 docker compose exec api alembic upgrade head
 docker compose exec api python -m app.seeds.seed_data
 ```
 
-- Если `docker compose exec api ...` возвращает `service "api" is not running`, дайте контейнеру подняться и повторите команду.
-- Если во время `docker compose up` появилось `container <project>-db-1 ... exited with code 1`, выполните `docker compose down -v` и повторите запуск — так база пересоберётся и миграции пройдут начисто.
-- Если `renderly-redis-1` не стартует с ошибкой `port is already allocated`, на машине уже запущен Redis на 6379 — остановите его либо поменяйте порт в `.env` (`REDIS_PORT` + `REDIS_URL`).
-- Если `api` падает на старте с `exec ./entrypoint.sh: no such file or directory`, обновите репозиторий, убедитесь, что `.gitattributes` подтянулся, и переустановите окончание строк: `git checkout -- apps/api/entrypoint.sh` (на Windows также проверьте `git config core.autocrlf false` перед клоном).
-- Если сборка `api`/`worker` в Docker зависает на `apt-get update`, укажите зеркала Debian: задайте `DEBIAN_MIRROR` и `DEBIAN_SECURITY_MIRROR` в `.env`/`infra/.env` (например, `http://mirror.yandex.ru/debian`) и повторите `docker compose up -d --build`.
-- API: http://localhost:8000/api/docs  
-- Web‑клиент: http://localhost:5173  
-- Health‑check: `GET http://localhost:8000/api/healthz`
+**Учётки из сидов**
+- Пользователь: `demo@renderly.dev` / `renderly123`
+- Админ: `admin@renderly.dev` / `renderlyAdmin123`
 
-### 2. Раздельный запуск сервисов
+**Перезапуск/остановка**
+- Перезапуск: `docker compose restart`
+- Чистый старт: `docker compose down -v` (пересоздаст БД/volumes)
 
+## Раздельный запуск сервисов
 ```bash
 # API
 cd apps/api
@@ -92,25 +77,40 @@ npm install
 npm run dev
 ```
 
-### 3. Тесты и статический анализ
-
+## Тесты и статический анализ
 ```bash
 make lint         # ruff + eslint
 make test-api     # pytest
 make test-web     # vitest
 ```
 
+## Troubleshooting
+- **401 в UI при кликах**: залогиньтесь `demo@renderly.dev` / `renderly123`; токен сохранится в `localStorage`.
+- **Redis порт занят**: остановите локальный Redis или измените `REDIS_PORT` и `REDIS_URL` в `.env` / `infra/.env`.
+- **Postgres контейнер упал**: `docker compose down -v && docker compose up -d --build`.
+- **apt-get update в api/worker**: образы учитывают `sources.list.d/debian.sources`; при медленных зеркалах задайте `DEBIAN_MIRROR` и `DEBIAN_SECURITY_MIRROR` в `.env` и пересоберите.
+- **Windows line endings**: если `entrypoint.sh` не исполняется — `git checkout -- apps/api/entrypoint.sh`, убедитесь `core.autocrlf=false`.
+
+## Структура репозитория
+```
+apps/
+  api/             # FastAPI приложение, модели, сервисы, worker
+  web/             # Vue 3 SPA, Pinia stores, Vitest
+  domain-manager/  # микросервис проверки CNAME
+infra/
+  docker-compose.yml, env.* и конфиги Nginx
+scripts/
+  deploy.sh        # production-скрипт обновления
+Makefile           # быстрые команды lint/test/compose
+```
+
 ## Документация
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — сервисы, модели, взаимодействия.
+- [`FEATURES.md`](FEATURES.md) — пользовательские сценарии и модули.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md) — подготовка серверов, Docker, Nginx, Certbot.
+- [`CRITERIA_TRACE.md`](CRITERIA_TRACE.md) — историческая трассировка требований.
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — глубоко про сервисы, модели и взаимодействия.
-- [`FEATURES.md`](FEATURES.md) — пользовательские сценарии и модули продукта.
-- [`DEPLOYMENT.md`](DEPLOYMENT.md) — подготовка серверов REG.RU, Docker, Nginx и Certbot.
-- [`CRITERIA_TRACE.md`](CRITERIA_TRACE.md) — трассировка требований (оставлено для истории).
-
-## Поддержка и обратная связь
-
-- Любые проблемы — создавайте issue или пишите в чат проекта.
-- Для продакшн‑инцидентов: подключайтесь к серверу, смотрите `docker compose logs -f api web proxy`.
-- Улучшения и идеи приветствуются в виде PR (linters/tests обязательны).
-
-Renderly стремится закрыть нишу «российского Tilda + Taplink» и уже готов к загрузке в репозиторий в актуальном состоянии.
+## Поддержка
+- Проблемы — issue или чат проекта.
+- Продакшн-инциденты: `docker compose logs -f api web proxy`.
+- Улучшения — PR с линтерами/тестами обязательны.
